@@ -253,7 +253,7 @@
     <div id="toast" class="toast">تمت العملية بنجاح! 📋</div>
 
     <script>
-        const rawPosts = [{"post_id": "123456789", "post_url": "https://facebook.com/groups/123/posts/123456789", "keyword": "rv cushion covers", "group_id": "123", "author": "Sarah Connor", "timestamp": "", "caption": "Way cheaper than replacing the cushions, and when they get dirty, I just throw them in the wash! Best update to our 20-year RV dinette.", "reactions_count": 350, "comments_count": 42, "shares_count": 18, "image_urls": "h; t; t; p; s; :; /; /; i; m; a; g; e; s; .; u; n; s; p; l; a; s; h; .; c; o; m; /; p; h; o; t; o; -; 1; 5; 2; 3; 7; 5; 5; 2; 3; 0; 3; 2; 0; -; 7; 1; a; 6; 5; 7; d; c; d; d; 7; 6; ?; w; =; 6; 0; 0", "local_images": ""}, {"post_id": "987654321", "post_url": "https://facebook.com/groups/123/posts/987654321", "keyword": "bike storage tent", "group_id": "123", "author": "Lucas Ethan", "timestamp": "", "caption": "Using a bike storage shed as an outdoor kitchen or storage space while camping. Solved all our morning coffee problems!", "reactions_count": 27800, "comments_count": 1700, "shares_count": 2200, "image_urls": "h; t; t; p; s; :; /; /; i; m; a; g; e; s; .; u; n; s; p; l; a; s; h; .; c; o; m; /; p; h; o; t; o; -; 1; 5; 0; 4; 2; 8; 0; 3; 9; 0; 3; 6; 7; -; 3; 6; 1; c; 6; d; 9; f; 3; 8; f; 4; ?; w; =; 6; 0; 0", "local_images": ""}];
+        const rawPosts = [];
         let currentStatusFilter = 'all';
 
         function toggleTipsModal(show) {
@@ -355,7 +355,11 @@
             const grid = document.getElementById('posts-grid');
             grid.innerHTML = '';
             if (posts.length === 0) {
-                grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 48px; color: #64748b; font-size: 15px;">لا توجد بوستات تطابق خيارات الترتيب والفلترة المحددة.</div>';
+                if (rawPosts.length === 0) {
+                    grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 60px 24px; color: #94a3b8; font-size: 16px;"><div style="font-size: 40px; margin-bottom: 12px;">⏳</div><strong>الداش بورد نظيفة وجاهزة تماماً!</strong><br><span style="font-size: 13px; color: #64748b; margin-top: 6px; display: block;">سيتم إضافة المنشورات الفايرال تلقائياً بمجرد تشغيل دورة السحب.</span></div>';
+                } else {
+                    grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 48px; color: #64748b; font-size: 15px;">لا توجد بوستات تطابق خيارات الترتيب والفلترة المحددة.</div>';
+                }
                 return;
             }
 

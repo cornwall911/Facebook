@@ -368,7 +368,11 @@ def generate_html_dashboard(posts: List[ScrapedPost], config: ScoutConfig, filen
             const grid = document.getElementById('posts-grid');
             grid.innerHTML = '';
             if (posts.length === 0) {{
-                grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 48px; color: #64748b; font-size: 15px;">لا توجد بوستات تطابق خيارات الترتيب والفلترة المحددة.</div>';
+                if (rawPosts.length === 0) {{
+                    grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 60px 24px; color: #94a3b8; font-size: 16px;"><div style="font-size: 40px; margin-bottom: 12px;">⏳</div><strong>الداش بورد نظيفة وجاهزة تماماً!</strong><br><span style="font-size: 13px; color: #64748b; margin-top: 6px; display: block;">سيتم إضافة المنشورات الفايرال تلقائياً بمجرد تشغيل دورة السحب.</span></div>';
+                }} else {{
+                    grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 48px; color: #64748b; font-size: 15px;">لا توجد بوستات تطابق خيارات الترتيب والفلترة المحددة.</div>';
+                }}
                 return;
             }}
 
