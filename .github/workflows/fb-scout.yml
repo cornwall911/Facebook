@@ -22,8 +22,6 @@ on:
 
 permissions:
   contents: write
-  pages: write
-  id-token: write
 
 jobs:
   scout:
@@ -65,43 +63,20 @@ jobs:
           fi
           python -m fb_winner_scout $ARGS
 
-      - name: Prepare Dashboard for Cloudflare & GitHub Pages
+      - name: Prepare Dashboard & Auto-Push for Cloudflare
         if: always()
         run: |
-          mkdir -p public gh-pages
+          mkdir -p public
           if [ -f data/reports/dashboard.html ]; then
             cp data/reports/dashboard.html public/index.html
-            cp data/reports/dashboard.html gh-pages/index.html
           fi
-          if [ -f data/reports/viral_posts.xlsx ]; then
-            cp data/reports/viral_posts.xlsx public/
-            cp data/reports/viral_posts.xlsx gh-pages/
-          fi
-          if [ -d data/images ]; then
-            cp -r data/images public/ 2>/dev/null || true
-            cp -r data/images gh-pages/ 2>/dev/null || true
-          fi
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add public/index.html data/reports/
+          git commit -m "chore(auto): update viral posts and dashboard [skip ci]" || echo "No changes to commit"
+          git push origin main || echo "Git push skipped"
 
-      - name: Deploy to Cloudflare Pages (Optional Direct API)
-        if: always()
-        continue-on-error: true
-        uses: cloudflare/pages-action@v1
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          projectName: fb-winner-scout
-          directory: public
-
-      - name: Deploy Dashboard to GitHub Pages
-        if: always()
-        continue-on-error: true
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./gh-pages
-          force_orphan: true
-
-      - name: Upload Artifacts (Excel & JSON)
+      - name: Upload Artifacts (Excel & JSON & Images)
         if: always()
         uses: actions/upload-artifact@v4
         with:
