@@ -49,6 +49,9 @@ jobs:
       - name: Run Viral Scout Pipeline
         env:
           FB_COOKIES_JSON: ${{ secrets.FB_COOKIES_JSON }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          CLOUDFLARE_PAGES_URL: ${{ secrets.CLOUDFLARE_PAGES_URL }}
           MIN_REACTIONS: ${{ github.event.inputs.min_reactions || '100' }}
           PROXY_URL: ${{ secrets.PROXY_URL }}
           HEADLESS: 'true'
@@ -62,22 +65,36 @@ jobs:
           fi
           python -m fb_winner_scout $ARGS
 
-      - name: Prepare Dashboard for GitHub Pages
+      - name: Prepare Dashboard for Cloudflare & GitHub Pages
         if: always()
         run: |
-          mkdir -p gh-pages
+          mkdir -p public gh-pages
           if [ -f data/reports/dashboard.html ]; then
+            cp data/reports/dashboard.html public/index.html
             cp data/reports/dashboard.html gh-pages/index.html
           fi
           if [ -f data/reports/viral_posts.xlsx ]; then
+            cp data/reports/viral_posts.xlsx public/
             cp data/reports/viral_posts.xlsx gh-pages/
           fi
           if [ -d data/images ]; then
-            cp -r data/images gh-pages/
+            cp -r data/images public/ 2>/dev/null || true
+            cp -r data/images gh-pages/ 2>/dev/null || true
           fi
+
+      - name: Deploy to Cloudflare Pages (Optional Direct API)
+        if: always()
+        continue-on-error: true
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: fb-winner-scout
+          directory: public
 
       - name: Deploy Dashboard to GitHub Pages
         if: always()
+        continue-on-error: true
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}

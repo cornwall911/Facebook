@@ -6,11 +6,13 @@ from fb_winner_scout.crawler import FacebookGroupCrawler
 from fb_winner_scout.storage import StorageManager
 from fb_winner_scout.dashboard import generate_html_dashboard
 from fb_winner_scout.parser import ScrapedPost
+from fb_winner_scout.telegram_notifier import TelegramNotifier
 
 class ScoutPipeline:
     def __init__(self, config: ScoutConfig):
         self.config = config
         self.storage = StorageManager(config)
+        self.notifier = TelegramNotifier()
 
     def run(self, groups: List[str], keywords: List[str]) -> List[ScrapedPost]:
         print("\n" + "=" * 55)
@@ -22,6 +24,13 @@ class ScoutPipeline:
         print(f"[*] Output directory: {self.config.output_dir.resolve()}")
         print("=" * 55 + "\n")
 
+        # 1. Notify Telegram that run has started
+        self.notifier.notify_run_started(
+            groups_count=len(groups),
+            keywords_count=len(keywords),
+            min_reactions=self.config.min_reactions
+        )
+
         session = FacebookSession(self.config)
         context = session.start()
         page = context.new_page()
@@ -29,15 +38,15 @@ class ScoutPipeline:
         all_collected_posts: List[ScrapedPost] = []
 
         try:
-            # 1. Verify Login
+            # 2. Verify Login
             print("[*] Verifying Facebook login...")
             logged_in = session.verify_login(page)
             if not logged_in:
-                print("[!] CRITICAL: Facebook session is not logged in or checkpoint encountered.")
-                print("    Please ensure your cookies.json contains active session cookies.")
-                # We continue anyway in case public search works or user wants to proceed
+                err_msg = "فشل التحقق من تسجيل الدخول في فيسبوك. يرجى تحديث الكوكيز cookies.json"
+                print(f"[!] CRITICAL: {err_msg}")
+                self.notifier.notify_error(err_msg, "التحقق من جلسة فيسبوك")
 
-            # 2. Iterate groups & keywords
+            # 3. Iterate groups & keywords
             for g_idx, group in enumerate(groups, 1):
                 clean_group = group.strip()
                 if not clean_group:
@@ -62,7 +71,7 @@ class ScoutPipeline:
                     # Polite rest between searches
                     time.sleep(3.0)
 
-            # 3. Export Results
+            # 4. Export Results
             if all_collected_posts:
                 print("\n" + "=" * 55)
                 print(f"  🎉 SUCCESS! Collected {len(all_collected_posts)} viral posts.")
@@ -78,8 +87,29 @@ class ScoutPipeline:
             else:
                 print("\n[!] No posts reached the threshold (100+ reactions) in this run.")
 
+            # 5. Notify Telegram that run completed successfully
+            top_rx = 0
+            top_url = ""
+            if all_collected_posts:
+                sorted_p = sorted(all_collected_posts, key=lambda x: x.reactions_count, reverse=True)
+                top_rx = sorted_p[0].reactions_count
+                top_url = sorted_p[0].post_url
+
+            self.notifier.notify_run_completed(
+                collected_count=len(all_collected_posts),
+                top_reactions=top_rx,
+                top_post_url=top_url,
+                total_groups=len(groups)
+            )
+
+        except Exception as e:
+            print(f"[Pipeline Error] {e}")
+            self.notifier.notify_error(str(e), "أثناء البحث في الجروبات")
+            raise e
+
         finally:
             print("[*] Closing browser session...")
             session.close()
 
         return all_collected_posts
+
