@@ -1,0 +1,95 @@
+name: Facebook Viral Posts Scout
+
+on:
+  workflow_dispatch:
+    inputs:
+      keywords:
+        description: 'Keywords to search (comma-separated or empty to use keywords.txt)'
+        required: false
+        default: ''
+      groups:
+        description: 'Group IDs or URLs to search (comma-separated or empty to use groups.txt)'
+        required: false
+        default: ''
+      min_reactions:
+        description: 'Minimum reactions threshold'
+        required: false
+        default: '100'
+
+  schedule:
+    # Runs automatically every 12 hours (00:00 UTC and 12:00 UTC)
+    - cron: '0 */12 * * *'
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  scout:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          python -m patchright install chromium
+
+      - name: Run Viral Scout Pipeline
+        env:
+          FB_COOKIES_JSON: ${{ secrets.FB_COOKIES_JSON }}
+          MIN_REACTIONS: ${{ github.event.inputs.min_reactions || '100' }}
+          PROXY_URL: ${{ secrets.PROXY_URL }}
+          HEADLESS: 'true'
+        run: |
+          ARGS="run --headless"
+          if [ -n "${{ github.event.inputs.groups }}" ]; then
+            ARGS="$ARGS --groups '${{ github.event.inputs.groups }}'"
+          fi
+          if [ -n "${{ github.event.inputs.keywords }}" ]; then
+            ARGS="$ARGS --keywords '${{ github.event.inputs.keywords }}'"
+          fi
+          python -m fb_winner_scout $ARGS
+
+      - name: Prepare Dashboard for GitHub Pages
+        if: always()
+        run: |
+          mkdir -p gh-pages
+          if [ -f data/reports/dashboard.html ]; then
+            cp data/reports/dashboard.html gh-pages/index.html
+          fi
+          if [ -f data/reports/viral_posts.xlsx ]; then
+            cp data/reports/viral_posts.xlsx gh-pages/
+          fi
+          if [ -d data/images ]; then
+            cp -r data/images gh-pages/
+          fi
+
+      - name: Deploy Dashboard to GitHub Pages
+        if: always()
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./gh-pages
+          force_orphan: true
+
+      - name: Upload Artifacts (Excel & JSON)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: viral-posts-results-${{ github.run_id }}
+          path: |
+            data/reports/
+            data/images/
+          retention-days: 14

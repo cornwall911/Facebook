@@ -1,0 +1,21 @@
+# Sensitive Facebook cookies & credentials
+cookies.json
+*.cookie
+*.session
+.env
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+
+# Local data & virtual environments
+.venv/
+venv/
+ENV/
+
+# OS files
+.DS_Store
+Thumbs.db

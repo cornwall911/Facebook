@@ -1,0 +1,5 @@
+scrapling[all]>=0.4.15
+patchright>=1.62.3
+pandas>=2.2.0
+openpyxl>=3.1.0
+pytest>=8.0.0
