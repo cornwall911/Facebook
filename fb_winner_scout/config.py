@@ -12,10 +12,10 @@ except ImportError:
 @dataclass
 class ScoutConfig:
     min_reactions: int = 100
-    max_scrolls: int = 25
-    max_posts_per_search: int = 30
-    scroll_delay_min: float = 2.0
-    scroll_delay_max: float = 4.0
+    max_scrolls: int = 5
+    max_posts_per_search: int = 25
+    scroll_delay_min: float = 1.0
+    scroll_delay_max: float = 2.0
     headless: bool = True
     output_dir: Path = field(default_factory=lambda: Path("data"))
     cookies_file: Optional[Path] = field(default_factory=lambda: Path("cookies.json") if Path("cookies.json").exists() else None)
@@ -26,8 +26,8 @@ class ScoutConfig:
     @classmethod
     def from_env(cls) -> "ScoutConfig":
         min_rx = int(os.environ.get("MIN_REACTIONS", "100"))
-        max_scr = int(os.environ.get("MAX_SCROLLS", "25"))
-        max_posts = int(os.environ.get("MAX_POSTS", "30"))
+        max_scr = int(os.environ.get("MAX_SCROLLS", "5"))
+        max_posts = int(os.environ.get("MAX_POSTS", "25"))
         headless_val = os.environ.get("HEADLESS", "true").lower() in ("true", "1", "yes")
         out_dir = Path(os.environ.get("OUTPUT_DIR", "data"))
         
