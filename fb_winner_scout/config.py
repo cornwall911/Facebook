@@ -18,7 +18,7 @@ class ScoutConfig:
     scroll_delay_max: float = 4.0
     headless: bool = True
     output_dir: Path = field(default_factory=lambda: Path("data"))
-    cookies_file: Optional[Path] = None
+    cookies_file: Optional[Path] = field(default_factory=lambda: Path("cookies.json") if Path("cookies.json").exists() else None)
     cookies_json_raw: Optional[str] = None
     proxy_url: Optional[str] = None
     user_data_dir: Optional[str] = None
