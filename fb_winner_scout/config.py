@@ -3,6 +3,11 @@ import json
 from pathlib import Path
 from dataclasses import dataclass, field
 from typing import List, Optional
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
 
 @dataclass
 class ScoutConfig:

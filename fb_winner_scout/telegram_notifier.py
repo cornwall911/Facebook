@@ -5,6 +5,11 @@ import json
 import urllib.request
 import urllib.parse
 from typing import Optional
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
 
 class TelegramNotifier:
     """Sends clean Telegram notifications for run start, completion, and errors only."""
