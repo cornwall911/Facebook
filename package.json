@@ -1,0 +1,11 @@
+{
+  "name": "facebook-viral-dashboard",
+  "version": "1.0.0",
+  "description": "Facebook Viral Scout Static Dashboard",
+  "scripts": {
+    "build": "echo 'Dashboard ready in public/'"
+  },
+  "devDependencies": {
+    "wrangler": "^3.80.0"
+  }
+}
