@@ -73,6 +73,7 @@ class ScrapedPost:
     amazon_query: str = ""
     winner_score: int = 0
     affiliate_url: str = ""
+    generated_caption: str = ""
 
     def to_dict(self) -> dict:
         imgs = self.image_urls if isinstance(self.image_urls, list) else [u.strip() for u in str(self.image_urls).split("; ") if u.strip()]
@@ -85,6 +86,7 @@ class ScrapedPost:
             "author": self.author,
             "timestamp": self.timestamp,
             "caption": self.caption,
+            "generated_caption": self.generated_caption,
             "reactions_count": self.reactions_count,
             "comments_count": self.comments_count,
             "shares_count": self.shares_count,

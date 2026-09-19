@@ -185,8 +185,12 @@ class FacebookGroupCrawler:
             print(f"\n[Crawler] 🌐 Searching Global Facebook Public Posts for '{keyword}'...")
         else:
             clean_group = group_id.strip().rstrip("/").split("/")[-1]
-            search_url = f"https://www.facebook.com/groups/{clean_group}/search/?q={encoded_kw}"
-            print(f"\n[Crawler] 👥 Searching in group '{clean_group}' for keyword '{keyword}'...")
+            if not keyword or keyword.strip().lower() in ("feed", "all", "none", ""):
+                search_url = f"https://www.facebook.com/groups/{clean_group}/"
+                print(f"\n[Crawler] 👥 Browsing main feed of group '{clean_group}'...")
+            else:
+                search_url = f"https://www.facebook.com/groups/{clean_group}/search/?q={encoded_kw}"
+                print(f"\n[Crawler] 👥 Searching in group '{clean_group}' for keyword '{keyword}'...")
 
         print(f"[Crawler] URL: {search_url}")
 
@@ -196,6 +200,9 @@ class FacebookGroupCrawler:
         except Exception as e:
             print(f"[Crawler Error] Failed to load search URL: {e}")
             return []
+
+        # Attempt to dismiss any initial login modal
+        self._dismiss_modal_if_present()
 
         scraped_posts: List[ScrapedPost] = []
         seen_post_ids: Set[str] = set()
@@ -275,7 +282,7 @@ class FacebookGroupCrawler:
             # Check termination
             if new_found_in_batch == 0:
                 no_new_posts_streak += 1
-                if no_new_posts_streak >= 2:
+                if no_new_posts_streak >= 5:
                     break
             else:
                 no_new_posts_streak = 0
@@ -287,9 +294,44 @@ class FacebookGroupCrawler:
         print(f"[Crawler] Finished search for '{keyword}' in '{clean_group}'. Total viral posts collected: {len(scraped_posts)}")
         return scraped_posts
 
+    def _dismiss_modal_if_present(self):
+        """Attempts to close or remove login blocker modal dialogs."""
+        try:
+            self.page.evaluate(r"""
+            () => {
+                const closeBtns = document.querySelectorAll("div[role='dialog'] div[role='button'], div[aria-label='إغلاق'], div[aria-label='Close']");
+                for (const b of closeBtns) b.click();
+            }
+            """)
+        except Exception:
+            pass
+
     def _human_scroll(self):
-        """Scrolls with randomized steps and pauses to mimic human behavior."""
-        scroll_y = random.randint(600, 950)
-        self.page.evaluate(f"window.scrollBy({{top: {scroll_y}, behavior: 'smooth'}})")
+        """Scrolls with randomized steps, mouse wheel, and container handling."""
+        self._dismiss_modal_if_present()
+        scroll_y = random.randint(800, 1400)
+        try:
+            # Physical mouse wheel on feed area
+            self.page.mouse.move(600, 500)
+            self.page.mouse.wheel(0, scroll_y)
+        except Exception:
+            pass
+
+        try:
+            # Fallback inner container scroll
+            self.page.evaluate(r"""
+            (dy) => {
+                window.scrollBy({top: dy, behavior: 'smooth'});
+                const all = document.querySelectorAll('*');
+                for (const el of all) {
+                    if (el.scrollHeight > el.clientHeight + 100 && el.clientHeight > 300) {
+                        el.scrollTop += dy;
+                    }
+                }
+            }
+            """, scroll_y)
+        except Exception:
+            pass
+
         delay = random.uniform(self.config.scroll_delay_min, self.config.scroll_delay_max)
         time.sleep(delay)

@@ -1,5 +1,6 @@
 import argparse
 import sys
+import time
 from pathlib import Path
 from fb_winner_scout.config import ScoutConfig
 from fb_winner_scout.pipeline import ScoutPipeline
@@ -36,6 +37,11 @@ def main():
     # Command: dashboard
     dash_parser = subparsers.add_parser("dashboard", help="Rebuild the HTML dashboard from saved posts")
     dash_parser.add_argument("-o", "--output", help="Output directory for reports (default: data)")
+
+    # Command: generate-captions
+    captions_parser = subparsers.add_parser("generate-captions", help="Generate AI short captions for existing saved winner posts")
+    captions_parser.add_argument("--force", action="store_true", help="Regenerate captions even if they already exist")
+    captions_parser.add_argument("-o", "--output", help="Output directory for reports (default: data)")
 
     args = parser.parse_args()
 
@@ -76,6 +82,33 @@ def main():
         posts = storage.load_all_posts()
         print(f"[*] Loaded {len(posts)} posts. Regenerating dashboard...")
         generate_html_dashboard(posts, config)
+
+    elif args.command == "generate-captions":
+        from fb_winner_scout.storage import StorageManager
+        from fb_winner_scout.dashboard import generate_html_dashboard
+        from fb_winner_scout.post_copywriter import PostCopywriter
+        config = ScoutConfig.from_env()
+        if args.output:
+            config.output_dir = Path(args.output)
+        storage = StorageManager(config)
+        posts = storage.load_all_posts()
+        copywriter = PostCopywriter()
+
+        updated_count = 0
+        for p in posts:
+            if (p.is_product or p.winner_score > 0) and (not p.generated_caption or getattr(args, "force", False)):
+                print(f"[*] Generating short caption for post {p.post_id} ({p.keyword})...")
+                p.generated_caption = copywriter.generate_caption(p)
+                updated_count += 1
+                time.sleep(2.0)
+
+        if updated_count > 0:
+            storage.save_to_json(posts)
+            storage.save_to_excel(posts)
+            generate_html_dashboard(posts, config)
+            print(f"[+] Successfully generated captions for {updated_count} winner posts and updated dashboard!")
+        else:
+            print("[*] No winner posts needed caption generation (all have captions or none qualified). Use --force to regenerate.")
 
     else:
         parser.print_help()

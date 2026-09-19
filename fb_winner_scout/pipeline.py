@@ -7,12 +7,14 @@ from fb_winner_scout.storage import StorageManager
 from fb_winner_scout.dashboard import generate_html_dashboard
 from fb_winner_scout.parser import ScrapedPost
 from fb_winner_scout.telegram_notifier import TelegramNotifier
+from fb_winner_scout.post_copywriter import PostCopywriter
 
 class ScoutPipeline:
     def __init__(self, config: ScoutConfig):
         self.config = config
         self.storage = StorageManager(config)
         self.notifier = TelegramNotifier()
+        self.copywriter = PostCopywriter()
 
     def run(self, groups: List[str], keywords: List[str]) -> List[ScrapedPost]:
         print("\n" + "=" * 55)
@@ -52,6 +54,23 @@ class ScoutPipeline:
                 if not clean_group:
                     continue
 
+                is_public = (clean_group.lower() in ("public", "facebook", "global", "all") or "search/posts" in clean_group)
+
+                # 3a. In groups, browse the main group feed directly to capture all recent hot member posts
+                if not is_public:
+                    print(f"\n---> [{g_idx}/{len(groups)}] 📰 Browsing Main Feed of Group: '{clean_group}'...")
+                    crawler = FacebookGroupCrawler(page, self.config)
+                    feed_posts = crawler.search_group(clean_group, "")
+                    for p in feed_posts:
+                        print(f"  [*] Downloading assets for post {p.post_id} ({len(p.image_urls)} images)...")
+                        self.storage.download_post_images(p)
+                        if p.is_product or p.winner_score > 0:
+                            print(f"  [✍️] Generating short social caption for post {p.post_id}...")
+                            p.generated_caption = self.copywriter.generate_caption(p)
+                        all_collected_posts.append(p)
+                    time.sleep(2.0)
+
+                # 3b. Search specific keywords
                 for k_idx, kw in enumerate(keywords, 1):
                     clean_kw = kw.strip()
                     if not clean_kw:
@@ -62,14 +81,17 @@ class ScoutPipeline:
                     crawler = FacebookGroupCrawler(page, self.config)
                     posts = crawler.search_group(clean_group, clean_kw)
 
-                    # Download images for each viral post
+                    # Download images and generate high-converting post caption
                     for p in posts:
                         print(f"  [*] Downloading assets for post {p.post_id} ({len(p.image_urls)} images)...")
                         self.storage.download_post_images(p)
+                        if p.is_product or p.winner_score > 0:
+                            print(f"  [✍️] Generating short social caption for post {p.post_id}...")
+                            p.generated_caption = self.copywriter.generate_caption(p)
                         all_collected_posts.append(p)
 
                     # Polite rest between searches
-                    time.sleep(3.0)
+                    time.sleep(2.5)
 
             # 4. Export Results
             if all_collected_posts:

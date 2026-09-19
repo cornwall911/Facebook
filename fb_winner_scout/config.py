@@ -12,8 +12,8 @@ except ImportError:
 @dataclass
 class ScoutConfig:
     min_reactions: int = 10
-    max_scrolls: int = 5
-    max_posts_per_search: int = 25
+    max_scrolls: int = 40
+    max_posts_per_search: int = 100
     scroll_delay_min: float = 1.0
     scroll_delay_max: float = 2.0
     headless: bool = True
@@ -26,8 +26,8 @@ class ScoutConfig:
     @classmethod
     def from_env(cls) -> "ScoutConfig":
         min_rx = int(os.environ.get("MIN_REACTIONS", "10"))
-        max_scr = int(os.environ.get("MAX_SCROLLS", "5"))
-        max_posts = int(os.environ.get("MAX_POSTS", "25"))
+        max_scr = int(os.environ.get("MAX_SCROLLS", "40"))
+        max_posts = int(os.environ.get("MAX_POSTS", "100"))
         headless_val = os.environ.get("HEADLESS", "true").lower() in ("true", "1", "yes")
         out_dir = Path(os.environ.get("OUTPUT_DIR", "data"))
         

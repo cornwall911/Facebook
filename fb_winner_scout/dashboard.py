@@ -123,6 +123,13 @@ def generate_html_dashboard(posts: List[ScrapedPost], config: ScoutConfig, filen
         .angle-copy-btn {{ background: #374151; color: white; border: none; padding: 3px 8px; border-radius: 4px; font-size: 10.5px; cursor: pointer; }}
         .angle-copy-btn:hover {{ background: var(--purple); }}
 
+        /* AI Short Caption Box */
+        .ai-caption-box {{ background: #131b2e; border: 1.5px solid #6366f1; border-radius: 8px; padding: 10px 12px; margin-top: 6px; display: flex; flex-direction: column; gap: 6px; box-shadow: 0 4px 14px rgba(99, 102, 241, 0.18); }}
+        .ai-caption-header {{ display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: 700; color: #a5b4fc; }}
+        .ai-caption-text {{ font-size: 13px; line-height: 1.5; color: #f1f5f9; direction: ltr; text-align: left; white-space: pre-line; }}
+        .ai-copy-btn {{ background: #4f46e5; color: white; border: none; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 700; cursor: pointer; transition: background 0.2s; }}
+        .ai-copy-btn:hover {{ background: #4338ca; }}
+
         /* Action Buttons */
         .card-actions-grid {{ display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 12px 16px; border-top: 1px solid var(--border); background: #0f172a; }}
         .btn {{ padding: 8px 10px; border-radius: 6px; font-size: 12px; font-weight: 700; text-align: center; text-decoration: none; cursor: pointer; border: none; transition: background 0.2s, transform 0.1s; display: flex; align-items: center; justify-content: center; gap: 5px; }}
@@ -450,6 +457,16 @@ def generate_html_dashboard(posts: List[ScrapedPost], config: ScoutConfig, filen
                         <div class="author-info">الناشر: <strong>${{escapeHtml(p.author || 'عضو')}}</strong> | في جروب: ${{p.group_id}}</div>
                         <div class="caption-box">${{escapeHtml(p.caption || 'No text')}}</div>
                         
+                        ${{p.generated_caption ? `
+                        <div class="ai-caption-box">
+                            <div class="ai-caption-header">
+                                <span>✍️ كابشن تسويقي جاهز للنشر (Short & High-Converting):</span>
+                                <button class="ai-copy-btn" onclick="copyCaption('${{encodeURIComponent(p.generated_caption)}}')">📋 نسخ</button>
+                            </div>
+                            <div class="ai-caption-text">${{escapeHtml(p.generated_caption)}}</div>
+                        </div>
+                        ` : ''}}
+
                         <!-- 1-to-5 Angles Drawer -->
                         <div class="angles-drawer" id="angles-${{p.post_id}}">
                             <div class="angle-item">
@@ -477,7 +494,10 @@ def generate_html_dashboard(posts: List[ScrapedPost], config: ScoutConfig, filen
                     </div>
 
                     <div class="card-actions-grid">
-                        <button class="btn btn-primary" onclick="copyCaption('${{encodeURIComponent(p.caption)}}')">📋 نسخ الكابشن</button>
+                        ${{p.generated_caption ? 
+                            `<button class="btn btn-primary" onclick="copyCaption('${{encodeURIComponent(p.generated_caption)}}')">📋 نسخ كابشن النشر</button>` : 
+                            `<button class="btn btn-primary" onclick="copyCaption('${{encodeURIComponent(p.caption)}}')">📋 نسخ الكابشن الأصلي</button>`
+                        }}
                         ${{lensUrl ? `<a href="${{lensUrl}}" target="_blank" class="btn btn-lens">🔍 مطابقة (Lens)</a>` : `<button class="btn btn-lens" disabled style="opacity:0.4;">🔍 لا توجد صورة</button>`}}
                         ${{p.affiliate_url ? `<a href="${{p.affiliate_url}}" target="_blank" class="btn btn-affiliate">🔗 رابط المنتج المعروض</a>` : ''}}
                         <a href="https://www.amazon.com/s?k=${{encodeURIComponent(p.amazon_query || p.keyword || 'rv gadget')}}" target="_blank" class="btn btn-amazon">🛒 بحث في أمازون</a>
@@ -519,7 +539,7 @@ def generate_html_dashboard(posts: List[ScrapedPost], config: ScoutConfig, filen
         function copyCaption(encoded) {{
             const text = decodeURIComponent(encoded);
             navigator.clipboard.writeText(text).then(() => {{
-                showToast("تم نسخ الكابشن الأصلي بنجاح! 📋");
+                showToast("تم نسخ الكابشن بنجاح! 📋");
             }});
         }}
 

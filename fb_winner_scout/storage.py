@@ -124,7 +124,7 @@ class StorageManager:
         # Reorder columns for optimal user reading
         cols_order = [
             "keyword", "reactions_count", "comments_count", "shares_count",
-            "post_url", "caption", "local_images", "author", "group_id", "post_id"
+            "post_url", "caption", "generated_caption", "local_images", "author", "group_id", "post_id"
         ]
         existing_cols = [c for c in cols_order if c in combined.columns]
         other_cols = [c for c in combined.columns if c not in existing_cols]
