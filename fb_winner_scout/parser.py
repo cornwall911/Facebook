@@ -74,6 +74,7 @@ class ScrapedPost:
     winner_score: int = 0
     affiliate_url: str = ""
     generated_caption: str = ""
+    clicks_count: int = 0
 
     def to_dict(self) -> dict:
         imgs = self.image_urls if isinstance(self.image_urls, list) else [u.strip() for u in str(self.image_urls).split("; ") if u.strip()]
@@ -90,6 +91,7 @@ class ScrapedPost:
             "reactions_count": self.reactions_count,
             "comments_count": self.comments_count,
             "shares_count": self.shares_count,
+            "clicks_count": self.clicks_count,
             "is_product": self.is_product,
             "product_category": self.product_category,
             "amazon_query": self.amazon_query,

@@ -7,6 +7,12 @@ from fb_winner_scout.parser import ScrapedPost
 from fb_winner_scout.config import ScoutConfig
 
 PINTEREST_QUERIES = [
+    ("rv countertop ice maker portable", "صانعات ثلج مدمجة (Portable Ice Makers)", "countertop portable ice maker rv"),
+    ("rv awning sun screen shade", "ستائر ومظلات الكرفان (Awning Screens)", "rv awning sun shade screen"),
+    ("rv electric skillet cooking", "مقالي وأدوات طهي كهربائية (Electric Skillets)", "compact electric skillet rv"),
+    ("rv socket ceiling fan light", "مراوح سقف ومصابيح ذكية (Socket Ceiling Fans)", "socket ceiling fan light with remote"),
+    ("rv portable evaporative air cooler", "أجهزة تبريد ومكيفات متنقلة (Air Coolers)", "portable evaporative air cooler"),
+    ("rv 5 gallon water pump dispenser", "مضخات مياه كهربائية (Water Dispensers)", "5 gallon water bottle pump electric rechargeable"),
     ("rv shoe storage organization", "تنظيم وتخزين الأحذية (RV Shoe Storage)", "rv shoe storage hooks"),
     ("rv adhesive hooks organization", "خطافات لاصقة ذكية (Adhesive Hooks)", "heavy duty adhesive hooks rv"),
     ("rv kitchen organization must haves", "منظمات مطبخ الكرفان (RV Kitchen)", "rv kitchen cabinet organizer"),

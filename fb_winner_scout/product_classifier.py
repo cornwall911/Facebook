@@ -23,21 +23,32 @@ NEGATIVE_PATTERNS = [
 CATEGORIES = {
     "تنظيم وتخزين جاهز (Storage & Organization)": [
         "organizer", "storage", "bin", "basket", "shelf", "drawer", "holder", "cabinet",
-        "rack", "hanger", "hook", "shoes", "sink topper", "collapsible", "tension rod", "magnetic"
+        "rack", "hanger", "hook", "shoes", "sink topper", "collapsible", "tension rod", "magnetic",
+        "drawer organizer", "closet organizer", "hanging closet"
     ],
     "أجهزة وإلكترونيات استهلاكية (Gadgets & Appliances)": [
         "gadget", "device", "solar", "battery", "generator", "inverter", "charger", "plug",
-        "heater", "fan", "ac", "air conditioner", "dehumidifier", "ice maker", "tpms", "camera", "gps", "monitor"
+        "heater", "fan", "ac", "air conditioner", "dehumidifier", "ice maker", "tpms", "camera", "gps", "monitor",
+        "socket fan", "ceiling fan", "electric skillet", "toaster", "air cooler", "evaporative cooler", "rechargeable bulb"
     ],
     "إكسسوارات وأدوات تجارية (Commercial Gear & Accessories)": [
         "amazon find", "bought on amazon", "best purchase", "worth every penny", "must have item",
-        "pool", "ladder", "shade", "blind", "mat", "cushion", "cover", "pet", "shower", "faucet", "lock"
+        "pool", "ladder", "shade", "blind", "mat", "cushion", "cover", "pet", "shower", "faucet", "lock",
+        "awning screen", "thin shade", "griddle", "water pump dispenser", "hot tub", "outdoor griddle"
     ],
     "معدات وأمان قابلة للشراء (RV Hardware & Equipment)": [
         "stabilizer", "jack", "chock", "leveler", "hitch", "hose", "water filter", "regulator",
         "surge protector", "adapter", "skillet", "grill"
     ]
 }
+
+# Proven 100+ Click High-Converting Winner Signals
+PROVEN_WINNERS = [
+    "ice maker", "electric skillet", "skillet", "evaporative cooler", "air cooler",
+    "awning screen", "thin shade", "socket fan", "ceiling fan", "griddle", "blackstone",
+    "water pump dispenser", "drawer organizer", "closet organizer", "rechargeable bulb",
+    "hot tub", "toaster"
+]
 
 # General product signals (Commercial Ready-to-Buy)
 POSITIVE_SIGNALS = [
@@ -52,7 +63,7 @@ POSITIVE_SIGNALS = [
     "anyone else have this", "got it from", "bought it from", "ordered from", "my favorite gadget",
     "$", "dollars", "review", "unboxing", "store", "accessory", "accessories", "must have",
     "must-have", "collapsible", "magnetic", "brand"
-]
+] + PROVEN_WINNERS
 
 def classify_post_product(caption: str, image_count: int, keyword: str = "") -> Tuple[bool, str, str, int]:
     """
@@ -95,15 +106,18 @@ def classify_post_product(caption: str, image_count: int, keyword: str = "") -> 
     if "$" in caption or re.search(r"\b\d+\s*(?:dollars|bucks)\b", text):
         signal_count += 2
 
+    is_proven_winner = any(pw in text or pw in kw for pw in PROVEN_WINNERS)
+
     # If search keyword is explicitly a product keyword (e.g. amazon find, organizer)
-    is_product_keyword = any(k in kw for k in ["amazon", "organizer", "gadget", "upgrade", "storage", "must have"])
+    is_product_keyword = any(k in kw for k in ["amazon", "organizer", "gadget", "upgrade", "storage", "must have"]) or is_proven_winner
     
     if signal_count >= 1 or is_product_keyword or highest_cat_matches >= 1:
         # Extract a clean Amazon search query
         query = _extract_amazon_search_query(caption, keyword)
         
-        # Calculate winner score (base 60 + signals)
-        score = min(100, 60 + (signal_count * 8) + (min(img_cnt, 3) * 5))
+        # Calculate winner score (base 60 + signals + proven bonus)
+        bonus = 15 if is_proven_winner else 0
+        score = min(100, 60 + (signal_count * 8) + (min(img_cnt, 3) * 5) + bonus)
         return True, matched_category, query, score
 
     return False, "غير مؤكد (نقاش عام)", "", 0
@@ -112,7 +126,23 @@ def _extract_amazon_search_query(caption: str, keyword: str) -> str:
     """Extracts a succinct, high-converting 2-4 word Amazon search term."""
     text = caption.lower()
     
-    # Specific common RV winners
+    # Specific proven high-converting RV winners (100+ Clicks)
+    if "ice maker" in text or "frigidaire" in text: return "countertop portable ice maker rv"
+    if "evaporative" in text or "air cooler" in text or "arctic air" in text: return "portable evaporative air cooler"
+    if "skillet" in text or "brentwood" in text: return "electric skillet compact rv cooking"
+    if "awning" in text or "dulepax" in text: return "rv awning sun shade screen"
+    if "socket fan" in text or "daybetter" in text: return "socket ceiling fan light with remote"
+    if "ceiling fan" in text or "bestmoument" in text: return "portable ceiling fan for tent rv"
+    if "thin shade" in text or "shade kit" in text or "ap products" in text: return "rv door window thin shade kit"
+    if "griddle" in text or "blackstone" in text: return "portable outdoor tabletop griddle"
+    if "water pump" in text or "water dispenser" in text: return "5 gallon water bottle pump electric rechargeable"
+    if "drawer organizer" in text or "royal craft" in text: return "expandable drawer organizer silverware rv"
+    if "closet organizer" in text or "hanging closet" in text or "covermates" in text: return "hanging closet organizer rv camper"
+    if "hot tub" in text or "seizeen" in text: return "inflatable hot tub portable outdoor"
+    if "light bulb" in text or ("rechargeable" in text and "bulb" in text): return "rechargeable emergency led light bulb"
+    if "toaster" in text or "thyme table" in text: return "compact 2 slice toaster camper"
+
+    # Other common RV winners
     if "pool" in text: return "rv collapsible pet pool"
     if "ladder" in text: return "bunk bed trampoline ladder"
     if "stabilizer" in text or "jack" in text or "wobble" in text or "shake" in text: return "rv stabilizer x chock"

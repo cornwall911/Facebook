@@ -93,7 +93,8 @@ def generate_html_dashboard(posts: List[ScrapedPost], config: ScoutConfig, filen
         
         .card-header {{ padding: 14px 16px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: #0f172a; }}
         .badge {{ background: #1e3a8a; color: #bfdbfe; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 700; }}
-        .metrics {{ display: flex; gap: 10px; font-size: 12.5px; font-weight: 700; direction: ltr; }}
+        .metrics {{ display: flex; gap: 8px; font-size: 12.5px; font-weight: 700; direction: ltr; align-items: center; }}
+        .ck {{ background: linear-gradient(135deg, #ef4444, #dc2626); color: white; padding: 2px 7px; border-radius: 6px; font-size: 11px; font-weight: 800; box-shadow: 0 2px 6px rgba(239, 68, 68, 0.4); letter-spacing: 0.5px; }}
         .rx {{ color: var(--success); }}
         .cm {{ color: #38bdf8; }}
         .sh {{ color: #fbbf24; }}
@@ -177,6 +178,7 @@ def generate_html_dashboard(posts: List[ScrapedPost], config: ScoutConfig, filen
             <span style="font-size: 12.5px; color: #94a3b8; font-weight: 600;">مراحل العمل:</span>
             <div class="filter-tabs">
                 <button class="filter-btn active" onclick="setStatusFilter('all', this)">الكل (<span id="cnt-all">0</span>)</button>
+                <button class="filter-btn" id="filter-top-clicks" onclick="toggleClicksOnly(this)" style="border-color: #ef4444; color: #f87171;">🔥 أبطال المبيعات (+100 Clicks)</button>
                 <button class="filter-btn" onclick="setStatusFilter('new', this)">⚪ جديد (<span id="cnt-new">0</span>)</button>
                 <button class="filter-btn" onclick="setStatusFilter('sent', this)">🟡 أُرسل لأحمد عادل (<span id="cnt-sent">0</span>)</button>
                 <button class="filter-btn" onclick="setStatusFilter('ready', this)">🟢 جاهز للنشر (<span id="cnt-ready">0</span>)</button>
@@ -189,7 +191,8 @@ def generate_html_dashboard(posts: List[ScrapedPost], config: ScoutConfig, filen
             <div class="control-item">
                 <label for="sort-select">⚡ الترتيب:</label>
                 <select id="sort-select" class="select-control" onchange="applyFilters()">
-                    <option value="reactions_desc">🔥 الأعلى لايكات وتفاعلاً (افتراضي)</option>
+                    <option value="reactions_desc">🔥 الأعلى تفاعلاً (افتراضي)</option>
+                    <option value="clicks_desc">💎 الأكثر نقرات ومبيعات (+100 Clicks)</option>
                     <option value="comments_desc">💬 الأكثر تعليقات (Link Requests)</option>
                     <option value="shares_desc">🔁 الأكثر مشاركة (Viral Shares)</option>
                     <option value="reactions_asc">📉 الأقل تفاعلاً</option>
@@ -200,7 +203,9 @@ def generate_html_dashboard(posts: List[ScrapedPost], config: ScoutConfig, filen
             <div class="control-item">
                 <label for="min-rx-select">🎯 أدنى تفاعل:</label>
                 <select id="min-rx-select" class="select-control" onchange="applyFilters()">
-                    <option value="0">الكل (+10)</option>
+                    <option value="0">الكل (بدون حد أدنى)</option>
+                    <option value="2">⚡ +2 لايكات (صاحبة النقرات العالية)</option>
+                    <option value="5">👍 +5 لايكات</option>
                     <option value="10">👍 +10 لايكات</option>
                     <option value="25">⭐ +25 لايك</option>
                     <option value="50">⚡ +50 لايك</option>
@@ -358,6 +363,21 @@ def generate_html_dashboard(posts: List[ScrapedPost], config: ScoutConfig, filen
             }});
         }}
 
+        let clicksOnlyFilter = false;
+        function toggleClicksOnly(btn) {{
+            clicksOnlyFilter = !clicksOnlyFilter;
+            if (clicksOnlyFilter) {{
+                btn.classList.add('active');
+                btn.style.background = '#ef4444';
+                btn.style.color = '#ffffff';
+            }} else {{
+                btn.classList.remove('active');
+                btn.style.background = '';
+                btn.style.color = '#f87171';
+            }}
+            applyFilters();
+        }}
+
         function applyFilters() {{
             const q = document.getElementById('search').value.toLowerCase();
             const sortVal = document.getElementById('sort-select').value;
@@ -371,6 +391,7 @@ def generate_html_dashboard(posts: List[ScrapedPost], config: ScoutConfig, filen
             let filtered = rawPosts.filter(p => {{
                 const st = getPostStatus(p.post_id);
                 const matchesStatus = (currentStatusFilter === 'all') || (st === currentStatusFilter);
+                const matchesClicks = !clicksOnlyFilter || (p.clicks_count && p.clicks_count >= 100);
                 const matchesQuery = !q || 
                     (p.keyword && p.keyword.toLowerCase().includes(q)) || 
                     (p.caption && p.caption.toLowerCase().includes(q)) ||
@@ -388,11 +409,13 @@ def generate_html_dashboard(posts: List[ScrapedPost], config: ScoutConfig, filen
                 const matchesImg = !hasImgOnly || imgs.length > 0;
                 const matchesPhysical = !physicalOnly || (p.is_product && imgs.length > 0);
 
-                return matchesStatus && matchesQuery && matchesPlatform && matchesMinRx && matchesKw && matchesImg && matchesPhysical;
+                return matchesStatus && matchesClicks && matchesQuery && matchesPlatform && matchesMinRx && matchesKw && matchesImg && matchesPhysical;
             }});
 
             // Apply Sorting
-            if (sortVal === 'reactions_desc') {{
+            if (sortVal === 'clicks_desc') {{
+                filtered.sort((a, b) => (b.clicks_count || 0) - (a.clicks_count || 0));
+            }} else if (sortVal === 'reactions_desc') {{
                 filtered.sort((a, b) => (b.reactions_count || 0) - (a.reactions_count || 0));
             }} else if (sortVal === 'comments_desc') {{
                 filtered.sort((a, b) => (b.comments_count || 0) - (a.comments_count || 0));
@@ -442,12 +465,14 @@ def generate_html_dashboard(posts: List[ScrapedPost], config: ScoutConfig, filen
                 card.innerHTML = `
                     <div class="card-header">
                         <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+                            ${{(p.clicks_count && p.clicks_count >= 100) ? `<span class="badge" style="background:#7f1d1d;color:#fecaca;border:1px solid #ef4444;font-weight:800;">🏆 فائز مثبت (+100 Clicks)</span>` : ''}}
                             ${{(p.group_id && p.group_id.includes('Pinterest')) ? `<span class="badge" style="background:#be185d;color:#fdf2f8;border:1px solid #f43f5e;">📌 بينتيريست</span>` : `<span class="badge">${{escapeHtml(p.keyword || 'Viral Post')}}</span>`}}
                             ${{p.is_product ? `<span class="prod-badge">📦 ${{escapeHtml(p.product_category || 'منتج فيزيائي')}}</span>` : ''}}
                             ${{p.winner_score ? `<span class="score-badge">⭐ ${{p.winner_score}}/100</span>` : ''}}
                             ${{(p.caption && /comment|below|first\\s*comm/i.test(p.caption)) ? `<span class="badge" style="background:#312e81;color:#c7d2fe;border:1px solid #6366f1;">💬 اللينك في التعليقات</span>` : ''}}
                         </div>
                         <div class="metrics">
+                            ${{p.clicks_count ? `<span class="ck" title="عدد النقرات الفعلية المثبتة">🔥 ${{p.clicks_count.toLocaleString()}} Clicks</span>` : ''}}
                             <span class="rx" title="عدد اللايكات والتفاعلات">👍 ${{p.reactions_count.toLocaleString()}}</span>
                             <span class="cm" title="عدد التعليقات">💬 ${{p.comments_count.toLocaleString()}}</span>
                             <span class="sh" title="عدد المشاركات">🔁 ${{p.shares_count.toLocaleString()}}</span>
