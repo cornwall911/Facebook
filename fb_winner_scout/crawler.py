@@ -4,7 +4,7 @@ import urllib.parse
 from typing import List, Set
 from patchright.sync_api import Page
 from fb_winner_scout.config import ScoutConfig
-from fb_winner_scout.parser import ScrapedPost, parse_count
+from fb_winner_scout.parser import ScrapedPost, parse_count, extract_affiliate_link
 from fb_winner_scout.product_classifier import classify_post_product
 
 JS_EXTRACT_POSTS = r"""
@@ -239,8 +239,17 @@ class FacebookGroupCrawler:
                 if not is_prod and "استبعاد" in cat:
                     continue
 
-                # Check viral threshold (high reactions OR high comments)
-                if rx_cnt >= self.config.min_reactions or cm_cnt >= 25:
+                # Extract direct product/affiliate link if present
+                aff_url = extract_affiliate_link(caption)
+                if aff_url:
+                    is_prod = True
+                    score = max(score, 90)
+
+                # User requirement: Reactions 10+, or comments 10+, or fresh post with product photo & affiliate/high score
+                is_fresh_winner = (len(img_urls) > 0) and (bool(aff_url) or score >= 80)
+                is_qualified = (rx_cnt >= self.config.min_reactions) or (cm_cnt >= 10) or is_fresh_winner
+
+                if is_qualified:
                     print(f"  [+] 📦 WINNING PRODUCT FOUND: {cat} (Score: {score}/100) | 👍 {rx_cnt} rx, 💬 {cm_cnt} cm | {p_url}")
                     scraped_posts.append(ScrapedPost(
                         post_id=p_id,
@@ -257,6 +266,7 @@ class FacebookGroupCrawler:
                         product_category=cat,
                         amazon_query=amz_q,
                         winner_score=score,
+                        affiliate_url=aff_url,
                     ))
                 else:
                     if rx_cnt > 0:

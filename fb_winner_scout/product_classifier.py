@@ -59,7 +59,12 @@ def classify_post_product(caption: str, image_count: int, keyword: str = "") -> 
         score (int): Winner score out of 100
     """
     # 1. Image is strictly required for e-commerce winner scouting
-    if image_count < 1:
+    try:
+        img_cnt = len(image_count) if isinstance(image_count, (list, tuple)) else int(image_count)
+    except Exception:
+        img_cnt = 0
+
+    if img_cnt < 1:
         return False, "غير مؤهل (بدون صور)", "", 0
 
     text = (caption or "").lower()

@@ -42,6 +42,18 @@ def parse_count(text: Optional[str]) -> int:
 
     return 0
 
+def extract_affiliate_link(text: Optional[str]) -> str:
+    """Extracts direct product/affiliate URLs (e.g. walmrt.us, amzn.to, a.co, amazon, walmart)."""
+    if not text:
+        return ""
+    m = re.search(r"https?://(?:[a-zA-Z0-9\-\.]+\.)?(?:walmrt\.us|amzn\.to|a\.co|walmart\.com|amazon\.com|bit\.ly|tinyurl\.com|target\.com)[^\s\)\"\'>]*", text)
+    if m:
+        return m.group(0).rstrip(".,;")
+    m_gen = re.search(r"https?://[^\s\)\"\'>]+", text)
+    if m_gen:
+        return m_gen.group(0).rstrip(".,;")
+    return ""
+
 @dataclass
 class ScrapedPost:
     post_id: str
@@ -60,6 +72,7 @@ class ScrapedPost:
     product_category: str = ""
     amazon_query: str = ""
     winner_score: int = 0
+    affiliate_url: str = ""
 
     def to_dict(self) -> dict:
         imgs = self.image_urls if isinstance(self.image_urls, list) else [u.strip() for u in str(self.image_urls).split("; ") if u.strip()]
@@ -79,6 +92,7 @@ class ScrapedPost:
             "product_category": self.product_category,
             "amazon_query": self.amazon_query,
             "winner_score": self.winner_score,
+            "affiliate_url": self.affiliate_url,
             "image_urls": "; ".join(imgs),
             "local_images": "; ".join(locs),
         }

@@ -33,6 +33,10 @@ def main():
     run_parser.add_argument("-c", "--cookies", help="Path to cookies.json file")
     run_parser.add_argument("-o", "--output", help="Output directory for reports and images (default: data)")
 
+    # Command: dashboard
+    dash_parser = subparsers.add_parser("dashboard", help="Rebuild the HTML dashboard from saved posts")
+    dash_parser.add_argument("-o", "--output", help="Output directory for reports (default: data)")
+
     args = parser.parse_args()
 
     if args.command in ("run", None):
@@ -61,6 +65,17 @@ def main():
 
         pipeline = ScoutPipeline(config)
         pipeline.run(groups, keywords)
+
+    elif args.command == "dashboard":
+        from fb_winner_scout.storage import StorageManager
+        from fb_winner_scout.dashboard import generate_html_dashboard
+        config = ScoutConfig.from_env()
+        if args.output:
+            config.output_dir = Path(args.output)
+        storage = StorageManager(config)
+        posts = storage.load_all_posts()
+        print(f"[*] Loaded {len(posts)} posts. Regenerating dashboard...")
+        generate_html_dashboard(posts, config)
 
     else:
         parser.print_help()

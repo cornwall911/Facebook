@@ -16,6 +16,9 @@ def generate_html_dashboard(posts: List[ScrapedPost], config: ScoutConfig, filen
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>Facebook Viral Scout Dashboard</title>
     <style>
         :root {{
@@ -130,6 +133,8 @@ def generate_html_dashboard(posts: List[ScrapedPost], config: ScoutConfig, filen
         .btn-lens:hover {{ filter: brightness(1.1); }}
         .btn-sheet {{ background: #059669; color: white; grid-column: span 1; }}
         .btn-sheet:hover {{ background: #047857; }}
+        .btn-affiliate {{ background: #059669; color: white; grid-column: span 1; text-decoration: none; }}
+        .btn-affiliate:hover {{ background: #047857; }}
         .btn-amazon {{ background: #ea580c; color: white; grid-column: span 1; text-decoration: none; }}
         .btn-amazon:hover {{ background: #c2410c; }}
         .prod-badge {{ background: #064e3b; color: #34d399; border: 1px solid #059669; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; }}
@@ -188,10 +193,13 @@ def generate_html_dashboard(posts: List[ScrapedPost], config: ScoutConfig, filen
             <div class="control-item">
                 <label for="min-rx-select">🎯 أدنى تفاعل:</label>
                 <select id="min-rx-select" class="select-control" onchange="applyFilters()">
-                    <option value="0">الكل (+100)</option>
-                    <option value="250">🔥 +250 لايك</option>
-                    <option value="500">🚀 +500 لايك (Mega-Viral)</option>
-                    <option value="1000">👑 +1,000 لايك (Super-Winners)</option>
+                    <option value="0">الكل (+10)</option>
+                    <option value="10">👍 +10 لايكات</option>
+                    <option value="25">⭐ +25 لايك</option>
+                    <option value="50">⚡ +50 لايك</option>
+                    <option value="100">🔥 +100 لايك</option>
+                    <option value="250">🚀 +250 لايك (Mega-Viral)</option>
+                    <option value="500">👑 +500 لايك (Super-Winners)</option>
                 </select>
             </div>
 
@@ -470,6 +478,7 @@ def generate_html_dashboard(posts: List[ScrapedPost], config: ScoutConfig, filen
                     <div class="card-actions-grid">
                         <button class="btn btn-primary" onclick="copyCaption('${{encodeURIComponent(p.caption)}}')">📋 نسخ الكابشن</button>
                         ${{lensUrl ? `<a href="${{lensUrl}}" target="_blank" class="btn btn-lens">🔍 مطابقة (Lens)</a>` : `<button class="btn btn-lens" disabled style="opacity:0.4;">🔍 لا توجد صورة</button>`}}
+                        ${{p.affiliate_url ? `<a href="${{p.affiliate_url}}" target="_blank" class="btn btn-affiliate">🔗 رابط المنتج المعروض</a>` : ''}}
                         <a href="https://www.amazon.com/s?k=${{encodeURIComponent(p.amazon_query || p.keyword || 'rv gadget')}}" target="_blank" class="btn btn-amazon">🛒 بحث في أمازون</a>
                         <button class="btn btn-sheet" onclick="copySheetRow('${{p.post_id}}')">📑 نسخ لشيت أحمد</button>
                         <button class="btn btn-angles-toggle" onclick="toggleAngles('${{p.post_id}}')">✨ زوايا (1-to-5)</button>
@@ -540,12 +549,16 @@ def generate_html_dashboard(posts: List[ScrapedPost], config: ScoutConfig, filen
     with open(out_file, "w", encoding="utf-8") as f:
         f.write(html_content)
 
-    # Also save to public/index.html for seamless Cloudflare Pages deployment
+    # Also save to public/index.html and root index.html for seamless Cloudflare Pages deployment
     public_file = Path("public/index.html")
     public_file.parent.mkdir(parents=True, exist_ok=True)
     with open(public_file, "w", encoding="utf-8") as f:
         f.write(html_content)
 
-    print(f"[Dashboard] Generated interactive dashboard at: {out_file} & {public_file}")
+    root_file = Path("index.html")
+    with open(root_file, "w", encoding="utf-8") as f:
+        f.write(html_content)
+
+    print(f"[Dashboard] Generated interactive dashboard at: {out_file}, {public_file}, & {root_file}")
     return out_file
 
