@@ -6,8 +6,9 @@ from patchright.sync_api import Page
 from fb_winner_scout.config import ScoutConfig
 from fb_winner_scout.parser import ScrapedPost, parse_count
 
-JS_EXTRACT_POSTS = """
+JS_EXTRACT_POSTS = r"""
 () => {
+
     const results = [];
     
     // 1. Expand 'See more' / 'عرض المزيد'
@@ -31,9 +32,9 @@ JS_EXTRACT_POSTS = """
             const h = l.getAttribute("href") || "";
             if (h.includes("/posts/") || h.includes("/permalink/")) {
                 const base = h.split("?")[0];
-                const parts = base.replace(/\\/+$/, "").split("/").filter(Boolean);
+                const parts = base.replace(/\/+$/, "").split("/").filter(Boolean);
                 const last = parts[parts.length - 1];
-                if (last && /^\\d+$/.test(last)) {
+                if (last && /^\d+$/.test(last)) {
                     postUrl = base.startsWith("http") ? base : "https://www.facebook.com" + base;
                     postId = last;
                     break;
@@ -69,31 +70,69 @@ JS_EXTRACT_POSTS = """
             }
         }
 
-        // Reactions raw
+        // Reactions
         let reactionsRaw = "";
-        const rxEl = art.querySelector("span[aria-label*='reaction'], span[aria-label*='reactions'], span[aria-label*='تفاعل'], span[aria-label*='معجب'], div[aria-label*='See who reacted']");
-        if (rxEl) {
-            reactionsRaw = rxEl.getAttribute("aria-label") || rxEl.innerText || "";
+        const allWithAria = art.querySelectorAll("[aria-label]");
+        for (const el of allWithAria) {
+            const aria = el.getAttribute("aria-label") || "";
+            const m = aria.match(/(?:أعجبني|تفاعل|like|reactions?|people)[:\s]+([٠-٩0-9.,kKmM]+)/i);
+            if (m) {
+                reactionsRaw = m[1];
+                break;
+            }
+            const mPeople = aria.match(/([٠-٩0-9.,kKmM]+)\s*(?:شخص|أشخاص|people|person)/i);
+            if (mPeople) {
+                reactionsRaw = mPeople[1];
+                break;
+            }
         }
+
+        if (!reactionsRaw) {
+            const allElements = art.querySelectorAll("*");
+            for (const el of allElements) {
+                const t = el.innerText ? el.innerText.trim() : "";
+                if (t.includes("كل التفاعلات") || t.includes("All reactions")) {
+                    const mAll = t.match(/([٠-٩0-9.,kKmM]+)/);
+                    if (mAll) {
+                        reactionsRaw = mAll[1];
+                        break;
+                    }
+                }
+            }
+        }
+
         if (!reactionsRaw) {
             const spans = art.querySelectorAll("span");
             for (let i = spans.length - 1; i >= Math.max(0, spans.length - 15); i--) {
-                const txt = spans[i].innerText.trim();
-                if (txt && (/^\\d+([.,]\\d+)?[kKmM]?$/.test(txt) || /^[٠-٩]+([٫،][٠-٩]+)?(ألف|مليون)?$/.test(txt))) {
+                const txt = spans[i].innerText ? spans[i].innerText.trim() : "";
+                if (txt && (/^[0-9]+([.,][0-9]+)?[kKmM]?$/.test(txt) || /^[٠-٩]+([٫،][٠-٩]+)?(ألف|مليون)?$/.test(txt))) {
                     reactionsRaw = txt;
                     break;
                 }
             }
         }
 
-        // Comments & Shares
+        // Comments
         let commentsRaw = "";
-        let sharesRaw = "";
-        const allSpans = art.querySelectorAll("span");
+        const allSpans = art.querySelectorAll("span, div[role='button']");
         for (const s of allSpans) {
-            const txt = s.innerText.trim();
-            if (txt.includes("comment") || txt.includes("تعليق")) commentsRaw = txt;
-            if (txt.includes("share") || txt.includes("مشارك")) sharesRaw = txt;
+            const txt = s.innerText ? s.innerText.trim() : "";
+            const mCm = txt.match(/([٠-٩0-9.,kKmM]+)\s*(?:تعليق|تعليقًا|comments?)/i);
+            if (mCm) {
+                commentsRaw = mCm[1];
+                break;
+            }
+        }
+
+        // Shares
+        let sharesRaw = "";
+        for (const s of allSpans) {
+            const txt = s.innerText ? s.innerText.trim() : "";
+            const mSh = txt.match(/([٠-٩0-9.,kKmM]+)\s*(?:مشاركة|shares?)/i);
+            if (mSh) {
+                sharesRaw = mSh[1];
+                break;
+            }
         }
 
         // Author
@@ -179,9 +218,9 @@ class FacebookGroupCrawler:
 
                 p_url = raw.get("post_url") or f"https://www.facebook.com/groups/{clean_group}/posts/{p_id}"
 
-                # Check viral threshold
-                if rx_cnt >= self.config.min_reactions:
-                    print(f"  [+] VIRAL POST FOUND: 👍 {rx_cnt} reactions | {p_url}")
+                # Check viral threshold (high reactions OR high comments)
+                if rx_cnt >= self.config.min_reactions or cm_cnt >= 25:
+                    print(f"  [+] VIRAL POST FOUND: {rx_cnt} reactions, {cm_cnt} comments | {p_url}")
                     scraped_posts.append(ScrapedPost(
                         post_id=p_id,
                         post_url=p_url,

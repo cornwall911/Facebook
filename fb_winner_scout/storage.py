@@ -68,6 +68,18 @@ class StorageManager:
         print(f"[Storage] Saved {len(existing_data)} total posts to JSON: {file_path}")
         return file_path
 
+    def load_all_posts(self, filename: str = "viral_posts.json") -> List[ScrapedPost]:
+        """Loads all accumulated posts from the database."""
+        file_path = self.reports_dir / filename
+        if not file_path.exists():
+            return []
+        try:
+            with open(file_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                return [ScrapedPost(**item) for item in data]
+        except Exception:
+            return []
+
     def save_to_excel(self, posts: List[ScrapedPost], filename: str = "viral_posts.xlsx") -> Path:
         """Saves or appends posts to an Excel spreadsheet (deduplicated by post_id)."""
         file_path = self.reports_dir / filename

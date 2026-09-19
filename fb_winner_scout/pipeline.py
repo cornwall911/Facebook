@@ -78,14 +78,17 @@ class ScoutPipeline:
                 print("=" * 55)
                 excel_path = self.storage.save_to_excel(all_collected_posts)
                 json_path = self.storage.save_to_json(all_collected_posts)
-                dash_path = generate_html_dashboard(all_collected_posts, self.config)
+                all_accumulated = self.storage.load_all_posts()
+                dash_path = generate_html_dashboard(all_accumulated, self.config)
                 
                 print(f"\n[+] Excel Report:   {excel_path.resolve()}")
                 print(f"[+] JSON Database:  {json_path.resolve()}")
                 print(f"[+] HTML Dashboard: {dash_path.resolve()}")
                 print(f"[+] Images Folder:  {self.storage.images_dir.resolve()}\n")
             else:
-                print("\n[!] No posts reached the threshold (100+ reactions) in this run.")
+                print(f"\n[!] No new posts reached the threshold ({self.config.min_reactions}+ reactions or 25+ comments) in this search.")
+                all_accumulated = self.storage.load_all_posts()
+                generate_html_dashboard(all_accumulated, self.config)
 
             # 5. Notify Telegram that run completed successfully
             top_rx = 0
