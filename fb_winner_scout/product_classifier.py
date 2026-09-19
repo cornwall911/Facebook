@@ -15,7 +15,8 @@ NEGATIVE_PATTERNS = [
     r"\bmy husband built\b", r"\bi built\b", r"\bwe built\b", r"\bi made this\b",
     r"\bpvc pipe\b", r"\bplywood\b", r"\b2x4\b", r"\blumber\b",
     r"\bhubby came up with this\b", r"\bproject about a\b",
-    r"\btotal transformation\b", r"\bpaint the walls\b", r"\bbought our first ever\b"
+    r"\btotal transformation\b", r"\bpaint the walls\b", r"\bbought our first ever\b",
+    r"\bhacks?\b", r"\blifehacks?\b"
 ]
 
 # Physical product categories and their trigger terms
@@ -95,7 +96,7 @@ def classify_post_product(caption: str, image_count: int, keyword: str = "") -> 
         signal_count += 2
 
     # If search keyword is explicitly a product keyword (e.g. amazon find, organizer)
-    is_product_keyword = any(k in kw for k in ["amazon", "organizer", "gadget", "upgrade", "storage", "hack", "must have"])
+    is_product_keyword = any(k in kw for k in ["amazon", "organizer", "gadget", "upgrade", "storage", "must have"])
     
     if signal_count >= 1 or is_product_keyword or highest_cat_matches >= 1:
         # Extract a clean Amazon search query

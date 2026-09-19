@@ -470,7 +470,7 @@ def generate_html_dashboard(posts: List[ScrapedPost], config: ScoutConfig, filen
                     ${{thumbsHtml}}
 
                     <div class="card-body">
-                        <div class="author-info">الناشر: <strong>${{escapeHtml(p.author || 'عضو')}}</strong> | في جروب: ${{p.group_id}}</div>
+                        <div class="author-info">الناشر: <strong>${{escapeHtml(p.author || 'عضو')}}</strong> | في جروب: ${{escapeHtml(p.group_id === 'RVhackcamp' ? 'RV Camping & Ideas' : (p.group_id || 'عام'))}}</div>
                         <div class="caption-box">${{escapeHtml(p.caption || 'No text')}}</div>
                         
                         ${{p.generated_caption ? `
@@ -502,9 +502,9 @@ def generate_html_dashboard(posts: List[ScrapedPost], config: ScoutConfig, filen
                             <div class="angle-item">
                                 <div class="angle-title">
                                     <span>💬 زاوية الفضول والتفاعل (Curiosity Hook)</span>
-                                    <button class="angle-copy-btn" onclick="copyText('Why did nobody tell me this existed before?! Found this hack last weekend and it completely upgraded my setup. Comment if you need details!')">📋 نسخ</button>
+                                    <button class="angle-copy-btn" onclick="copyText('Why did nobody tell me this existed before?! Found this gadget last weekend and it completely upgraded my setup. Comment if you need details!')">📋 نسخ</button>
                                 </div>
-                                <div class="angle-text">"Why did nobody tell me this existed before?! Found this hack last weekend and it completely upgraded my setup. Comment if you need details!"</div>
+                                <div class="angle-text">"Why did nobody tell me this existed before?! Found this gadget last weekend and it completely upgraded my setup. Comment if you need details!"</div>
                             </div>
                         </div>
                     </div>

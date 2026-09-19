@@ -11,8 +11,8 @@ PINTEREST_QUERIES = [
     ("rv adhesive hooks organization", "خطافات لاصقة ذكية (Adhesive Hooks)", "heavy duty adhesive hooks rv"),
     ("rv kitchen organization must haves", "منظمات مطبخ الكرفان (RV Kitchen)", "rv kitchen cabinet organizer"),
     ("rv camper space saving gadgets", "أجهزة وحلول توفير المساحة (Space Savers)", "rv space saving gadgets"),
-    ("travel trailer storage hacks", "أفكار تخزين ذكية (Camper Storage)", "travel trailer storage solutions"),
-    ("rv bathroom space saving hacks", "تنظيم حمام الكرفان (RV Bathroom)", "rv bathroom shower organizer"),
+    ("travel trailer storage organizers", "حلول ومنظمات تخزين الكرفان (Camper Storage)", "travel trailer storage solutions"),
+    ("rv bathroom storage organizers", "تنظيم وتخزين حمام الكرفان (RV Bathroom)", "rv bathroom shower organizer"),
     ("rv collapsible gadgets amazon", "أدوات قابلة للطي (Collapsible Gear)", "rv collapsible kitchen items"),
     ("rv bedside storage caddy", "منظمات جانب السرير (Bedside Caddy)", "rv bedside hanging caddy pocket"),
 ]
