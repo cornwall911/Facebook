@@ -93,6 +93,20 @@ class ScoutPipeline:
                     # Polite rest between searches
                     time.sleep(2.5)
 
+            # 3c. Also scout Pinterest for top viral RV ideas and space savers
+            try:
+                from fb_winner_scout.pinterest_scout import PinterestScout
+                print("\n" + "=" * 55)
+                print("  📌 Scouting Pinterest for RV Space Savers & Gadgets...")
+                print("=" * 55)
+                pin_scout = PinterestScout(page, self.config)
+                pin_posts = pin_scout.scout_all(max_per_query=8)
+                for p in pin_posts:
+                    self.storage.download_post_images(p)
+                    all_collected_posts.append(p)
+            except Exception as e:
+                print(f"[Warning] Pinterest scout step error: {e}")
+
             # 4. Export Results
             if all_collected_posts:
                 print("\n" + "=" * 55)

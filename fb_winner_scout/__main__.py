@@ -43,6 +43,11 @@ def main():
     captions_parser.add_argument("--force", action="store_true", help="Regenerate captions even if they already exist")
     captions_parser.add_argument("-o", "--output", help="Output directory for reports (default: data)")
 
+    # Command: pinterest
+    pin_parser = subparsers.add_parser("pinterest", help="Scout Pinterest for RV organization and space-saving product ideas")
+    pin_parser.add_argument("-o", "--output", help="Output directory for reports (default: data)")
+    pin_parser.add_argument("--max-per-query", type=int, default=12, help="Max pins per category (default: 12)")
+
     args = parser.parse_args()
 
     if args.command in ("run", None):
@@ -109,6 +114,31 @@ def main():
             print(f"[+] Successfully generated captions for {updated_count} winner posts and updated dashboard!")
         else:
             print("[*] No winner posts needed caption generation (all have captions or none qualified). Use --force to regenerate.")
+
+    elif args.command == "pinterest":
+        from patchright.sync_api import sync_playwright
+        from fb_winner_scout.storage import StorageManager
+        from fb_winner_scout.dashboard import generate_html_dashboard
+        from fb_winner_scout.pinterest_scout import PinterestScout
+        config = ScoutConfig.from_env()
+        if args.output:
+            config.output_dir = Path(args.output)
+        storage = StorageManager(config)
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True)
+            page = browser.new_page(viewport={"width": 1440, "height": 900})
+            scout = PinterestScout(page, config)
+            pin_posts = scout.scout_all(max_per_query=getattr(args, "max_per_query", 12))
+            browser.close()
+
+        for post in pin_posts:
+            storage.download_post_images(post)
+
+        storage.save_to_json(pin_posts)
+        storage.save_to_excel(pin_posts)
+        all_posts = storage.load_all_posts()
+        generate_html_dashboard(all_posts, config)
+        print(f"\n[+] 🎉 Successfully collected {len(pin_posts)} Pinterest RV product winners! Total in database: {len(all_posts)}")
 
     else:
         parser.print_help()

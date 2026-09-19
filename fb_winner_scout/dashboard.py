@@ -211,6 +211,15 @@ def generate_html_dashboard(posts: List[ScrapedPost], config: ScoutConfig, filen
             </div>
 
             <div class="control-item">
+                <label for="platform-select">🌐 المنصة:</label>
+                <select id="platform-select" class="select-control" onchange="applyFilters()">
+                    <option value="all">🌐 الكل (Facebook + Pinterest)</option>
+                    <option value="facebook">👥 فيسبوك فقط (Facebook Groups)</option>
+                    <option value="pinterest">📌 بينتيريست فقط (Pinterest Finds)</option>
+                </select>
+            </div>
+
+            <div class="control-item">
                 <label for="keyword-select">🏷️ النيش / الكلمة:</label>
                 <select id="keyword-select" class="select-control" onchange="applyFilters()">
                     <option value="all">كل الكلمات والنيشات</option>
@@ -357,6 +366,8 @@ def generate_html_dashboard(posts: List[ScrapedPost], config: ScoutConfig, filen
             const hasImgOnly = document.getElementById('has-img-only').checked;
             const physicalOnly = document.getElementById('physical-only') ? document.getElementById('physical-only').checked : false;
 
+            const platformFilter = document.getElementById('platform-select') ? document.getElementById('platform-select').value : 'all';
+
             let filtered = rawPosts.filter(p => {{
                 const st = getPostStatus(p.post_id);
                 const matchesStatus = (currentStatusFilter === 'all') || (st === currentStatusFilter);
@@ -365,6 +376,11 @@ def generate_html_dashboard(posts: List[ScrapedPost], config: ScoutConfig, filen
                     (p.caption && p.caption.toLowerCase().includes(q)) ||
                     (p.author && p.author.toLowerCase().includes(q));
                 
+                const isPin = (p.group_id && p.group_id.toLowerCase().includes('pinterest')) || (p.keyword && p.keyword.toLowerCase().includes('pinterest'));
+                const matchesPlatform = (platformFilter === 'all') ||
+                    (platformFilter === 'pinterest' && isPin) ||
+                    (platformFilter === 'facebook' && !isPin);
+
                 const matchesMinRx = (p.reactions_count || 0) >= minRx;
                 const matchesKw = (kwFilter === 'all') || (p.keyword === kwFilter);
                 
@@ -372,7 +388,7 @@ def generate_html_dashboard(posts: List[ScrapedPost], config: ScoutConfig, filen
                 const matchesImg = !hasImgOnly || imgs.length > 0;
                 const matchesPhysical = !physicalOnly || (p.is_product && imgs.length > 0);
 
-                return matchesStatus && matchesQuery && matchesMinRx && matchesKw && matchesImg && matchesPhysical;
+                return matchesStatus && matchesQuery && matchesPlatform && matchesMinRx && matchesKw && matchesImg && matchesPhysical;
             }});
 
             // Apply Sorting
@@ -426,7 +442,7 @@ def generate_html_dashboard(posts: List[ScrapedPost], config: ScoutConfig, filen
                 card.innerHTML = `
                     <div class="card-header">
                         <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
-                            <span class="badge">${{escapeHtml(p.keyword || 'Viral Post')}}</span>
+                            ${{(p.group_id && p.group_id.includes('Pinterest')) ? `<span class="badge" style="background:#be185d;color:#fdf2f8;border:1px solid #f43f5e;">📌 بينتيريست</span>` : `<span class="badge">${{escapeHtml(p.keyword || 'Viral Post')}}</span>`}}
                             ${{p.is_product ? `<span class="prod-badge">📦 ${{escapeHtml(p.product_category || 'منتج فيزيائي')}}</span>` : ''}}
                             ${{p.winner_score ? `<span class="score-badge">⭐ ${{p.winner_score}}/100</span>` : ''}}
                             ${{(p.caption && /comment|below|first\\s*comm/i.test(p.caption)) ? `<span class="badge" style="background:#312e81;color:#c7d2fe;border:1px solid #6366f1;">💬 اللينك في التعليقات</span>` : ''}}
