@@ -10,38 +10,43 @@ NEGATIVE_PATTERNS = [
     r"\bfirst time camping\b", r"\bprayers\b", r"\brip\b", r"\blemon law\b", r"\bdealership lied\b",
     r"\blawyer\b", r"\bsue\b", r"\bwarranty denied\b", r"\binterest rate\b", r"\bfinancing\b",
     r"\btowing capacity\b", r"\bpayload capacity\b", r"\btransmission fluid\b",
-    r"\bbuy\s*back\b", r"\bnothing but trouble\b", r"\bavoid these lying\b", r"\bdeteriorating quickly\b"
+    r"\bbuy\s*back\b", r"\bnothing but trouble\b", r"\bavoid these lying\b", r"\bdeteriorating quickly\b",
+    r"\bdiy\b", r"\bhomemade\b", r"\bhome made\b", r"\bcrafted\b",
+    r"\bmy husband built\b", r"\bi built\b", r"\bwe built\b", r"\bi made this\b",
+    r"\bpvc pipe\b", r"\bplywood\b", r"\b2x4\b", r"\blumber\b",
+    r"\bhubby came up with this\b", r"\bproject about a\b",
+    r"\btotal transformation\b", r"\bpaint the walls\b", r"\bbought our first ever\b"
 ]
 
 # Physical product categories and their trigger terms
 CATEGORIES = {
-    "تنظيم وتخزين (Storage & Organization)": [
+    "تنظيم وتخزين جاهز (Storage & Organization)": [
         "organizer", "storage", "bin", "basket", "shelf", "drawer", "holder", "cabinet",
         "rack", "hanger", "hook", "shoes", "sink topper", "collapsible", "tension rod", "magnetic"
     ],
-    "أجهزة وإلكترونيات (Gadgets & Power)": [
+    "أجهزة وإلكترونيات استهلاكية (Gadgets & Appliances)": [
         "gadget", "device", "solar", "battery", "generator", "inverter", "charger", "plug",
         "heater", "fan", "ac", "air conditioner", "dehumidifier", "ice maker", "tpms", "camera", "gps", "monitor"
     ],
-    "إكسسوارات وحلول ذكية (Smart Accessories & Hacks)": [
-        "hack", "upgrade", "game changer", "worth every penny", "must have", "amazon find", "bought on amazon",
+    "إكسسوارات وأدوات تجارية (Commercial Gear & Accessories)": [
+        "amazon find", "bought on amazon", "best purchase", "worth every penny", "must have item",
         "pool", "ladder", "shade", "blind", "mat", "cushion", "cover", "pet", "shower", "faucet", "lock"
     ],
-    "معدات وأمان (RV Gear & Hardware)": [
+    "معدات وأمان قابلة للشراء (RV Hardware & Equipment)": [
         "stabilizer", "jack", "chock", "leveler", "hitch", "hose", "water filter", "regulator",
-        "surge protector", "adapter", "seal", "vent", "skillet", "grill"
+        "surge protector", "adapter", "skillet", "grill"
     ]
 }
 
-# General product signals
+# General product signals (Commercial Ready-to-Buy)
 POSITIVE_SIGNALS = [
     "amazon", "bought", "ordered", "purchased", "got this", "delivered", "worth every penny",
-    "game changer", "hack", "organizer", "gadget", "device", "upgrade", "tool", "item",
+    "game changer", "organizer", "gadget", "device", "upgrade", "tool", "item",
     "portable", "compact", "holder", "ladder", "solar", "leveler", "chock", "stabilizer",
     "heater", "fan", "hose", "filter", "light", "mat", "cover", "lock", "adapter",
     "sink", "faucet", "grill", "storage", "bin", "shelf", "battery", "generator",
-    "link in comments", "link below", "$", "dollars", "review", "unboxing", "install",
-    "installed", "accessory", "accessories", "must have", "flip", "collapsible", "magnetic"
+    "link in comments", "link below", "$", "dollars", "review", "unboxing", "store",
+    "accessory", "accessories", "must have", "collapsible", "magnetic", "brand"
 ]
 
 def classify_post_product(caption: str, image_count: int, keyword: str = "") -> Tuple[bool, str, str, int]:
