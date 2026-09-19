@@ -12,14 +12,21 @@ JS_EXTRACT_POSTS = r"""
 
     const results = [];
     
-    // 1. Expand 'See more' / 'عرض المزيد'
+    // 1. Expand ONLY post caption 'See more' (NEVER comment expansions that open modals)
     try {
         document.querySelectorAll("div[role='button']").forEach(b => {
-            const t = b.innerText;
-            if (t && (t === "See more" || t === "See More" || t.includes("عرض المزيد"))) {
+            const t = (b.innerText || "").trim();
+            if ((t === "See more" || t === "See More" || t === "عرض المزيد") && 
+                !t.includes("تعليق") && !t.includes("رد") && !t.includes("إجابة") && !t.includes("comment") && !t.includes("repl")) {
                 b.click();
             }
         });
+    } catch(e) {}
+
+    // Close any hijacked modal if opened
+    try {
+        const dialogClose = document.querySelectorAll("div[role='dialog'] div[aria-label='إغلاق'], div[role='dialog'] div[aria-label='Close']");
+        dialogClose.forEach(c => c.click());
     } catch(e) {}
 
     // 2. Locate feed articles
@@ -218,6 +225,7 @@ class FacebookGroupCrawler:
                 raw_batch = []
 
             new_found_in_batch = 0
+            print(f"[Crawler Debug] Scroll {scroll_count+1}/{self.config.max_scrolls} | Raw items: {len(raw_batch)} | Collected: {len(scraped_posts)}")
 
             for raw in raw_batch:
                 p_id = raw.get("post_id")
@@ -252,9 +260,14 @@ class FacebookGroupCrawler:
                     is_prod = True
                     score = max(score, 90)
 
-                # User requirement: Reactions 10+, or comments 10+, or fresh post with product photo & affiliate/high score
-                is_fresh_winner = (len(img_urls) > 0) and (bool(aff_url) or score >= 65)
-                is_qualified = (rx_cnt >= self.config.min_reactions) or (cm_cnt >= 10) or is_fresh_winner
+                # User requirement: Must have photo + (10+ rx, or 5+ cm, or product/affiliate link/score)
+                is_qualified = (len(img_urls) > 0) and (
+                    rx_cnt >= self.config.min_reactions or 
+                    cm_cnt >= 5 or 
+                    bool(aff_url) or 
+                    is_prod or 
+                    score >= 50
+                )
 
                 if is_qualified:
                     print(f"  [+] 📦 WINNING PRODUCT FOUND: {cat} (Score: {score}/100) | 👍 {rx_cnt} rx, 💬 {cm_cnt} cm | {p_url}")
@@ -311,8 +324,16 @@ class FacebookGroupCrawler:
         self._dismiss_modal_if_present()
         scroll_y = random.randint(800, 1400)
         try:
-            # Physical mouse wheel on feed area
-            self.page.mouse.move(600, 500)
+            # Physical mouse wheel on active feed area
+            feed = self.page.locator("div[role='feed']")
+            if feed.count() > 0:
+                box = feed.first.bounding_box()
+                if box:
+                    self.page.mouse.move(box["x"] + box["width"] / 2, 600)
+                else:
+                    self.page.mouse.move(900, 500)
+            else:
+                self.page.mouse.move(900, 500)
             self.page.mouse.wheel(0, scroll_y)
         except Exception:
             pass
