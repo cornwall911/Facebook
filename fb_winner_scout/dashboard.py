@@ -422,6 +422,7 @@ def generate_html_dashboard(posts: List[ScrapedPost], config: ScoutConfig, filen
                             <span class="badge">${{escapeHtml(p.keyword || 'Viral Post')}}</span>
                             ${{p.is_product ? `<span class="prod-badge">📦 ${{escapeHtml(p.product_category || 'منتج فيزيائي')}}</span>` : ''}}
                             ${{p.winner_score ? `<span class="score-badge">⭐ ${{p.winner_score}}/100</span>` : ''}}
+                            ${{(p.caption && /comment|below|first\\s*comm/i.test(p.caption)) ? `<span class="badge" style="background:#312e81;color:#c7d2fe;border:1px solid #6366f1;">💬 اللينك في التعليقات</span>` : ''}}
                         </div>
                         <div class="metrics">
                             <span class="rx" title="عدد اللايكات والتفاعلات">👍 ${{p.reactions_count.toLocaleString()}}</span>

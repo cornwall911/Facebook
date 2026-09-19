@@ -246,7 +246,7 @@ class FacebookGroupCrawler:
                     score = max(score, 90)
 
                 # User requirement: Reactions 10+, or comments 10+, or fresh post with product photo & affiliate/high score
-                is_fresh_winner = (len(img_urls) > 0) and (bool(aff_url) or score >= 80)
+                is_fresh_winner = (len(img_urls) > 0) and (bool(aff_url) or score >= 65)
                 is_qualified = (rx_cnt >= self.config.min_reactions) or (cm_cnt >= 10) or is_fresh_winner
 
                 if is_qualified:

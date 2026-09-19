@@ -45,8 +45,12 @@ POSITIVE_SIGNALS = [
     "portable", "compact", "holder", "ladder", "solar", "leveler", "chock", "stabilizer",
     "heater", "fan", "hose", "filter", "light", "mat", "cover", "lock", "adapter",
     "sink", "faucet", "grill", "storage", "bin", "shelf", "battery", "generator",
-    "link in comments", "link below", "$", "dollars", "review", "unboxing", "store",
-    "accessory", "accessories", "must have", "collapsible", "magnetic", "brand"
+    "link in comments", "link in comment", "link below", "link is in the comments", "in the comments",
+    "found on amazon", "found on walmart", "walmart find", "amazon find", "best purchase",
+    "obsessed with this", "love this thing", "life saver", "finally found", "check comments",
+    "anyone else have this", "got it from", "bought it from", "ordered from", "my favorite gadget",
+    "$", "dollars", "review", "unboxing", "store", "accessory", "accessories", "must have",
+    "must-have", "collapsible", "magnetic", "brand"
 ]
 
 def classify_post_product(caption: str, image_count: int, keyword: str = "") -> Tuple[bool, str, str, int]:
@@ -98,7 +102,7 @@ def classify_post_product(caption: str, image_count: int, keyword: str = "") -> 
         query = _extract_amazon_search_query(caption, keyword)
         
         # Calculate winner score (base 60 + signals)
-        score = min(100, 60 + (signal_count * 8) + (min(image_count, 3) * 5))
+        score = min(100, 60 + (signal_count * 8) + (min(img_cnt, 3) * 5))
         return True, matched_category, query, score
 
     return False, "غير مؤكد (نقاش عام)", "", 0
