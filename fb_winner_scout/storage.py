@@ -76,8 +76,23 @@ class StorageManager:
         try:
             with open(file_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
-                return [ScrapedPost(**item) for item in data]
-        except Exception:
+            posts = []
+            for item in data:
+                iu = item.get("image_urls", [])
+                if isinstance(iu, str):
+                    # Clean any corrupted joins like 'h; t; t; p'
+                    if iu.startswith("h; t; t; p"):
+                        iu = "".join([part for part in iu.split("; ")])
+                    item["image_urls"] = [u.strip() for u in iu.split("; ") if u.strip()]
+                li = item.get("local_images", [])
+                if isinstance(li, str):
+                    if li.startswith("d; a; t; a"):
+                        li = "".join([part for part in li.split("; ")])
+                    item["local_images"] = [l.strip() for l in li.split("; ") if l.strip()]
+                posts.append(ScrapedPost(**item))
+            return posts
+        except Exception as e:
+            print(f"[Storage Warning] load_all_posts error: {e}")
             return []
 
     def save_to_excel(self, posts: List[ScrapedPost], filename: str = "viral_posts.xlsx") -> Path:

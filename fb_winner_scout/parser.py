@@ -58,6 +58,8 @@ class ScrapedPost:
     local_images: List[str] = field(default_factory=list)
 
     def to_dict(self) -> dict:
+        imgs = self.image_urls if isinstance(self.image_urls, list) else [u.strip() for u in str(self.image_urls).split("; ") if u.strip()]
+        locs = self.local_images if isinstance(self.local_images, list) else [u.strip() for u in str(self.local_images).split("; ") if u.strip()]
         return {
             "post_id": self.post_id,
             "post_url": self.post_url,
@@ -69,6 +71,6 @@ class ScrapedPost:
             "reactions_count": self.reactions_count,
             "comments_count": self.comments_count,
             "shares_count": self.shares_count,
-            "image_urls": "; ".join(self.image_urls),
-            "local_images": "; ".join(self.local_images),
+            "image_urls": "; ".join(imgs),
+            "local_images": "; ".join(locs),
         }

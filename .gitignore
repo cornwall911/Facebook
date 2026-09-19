@@ -12,6 +12,7 @@ __pycache__/
 .pytest_cache/
 
 # Local data & virtual environments
+data/images/
 .venv/
 venv/
 ENV/
