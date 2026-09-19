@@ -1,3 +1,4 @@
+import dataclasses
 import os
 import json
 import urllib.request
@@ -26,35 +27,38 @@ class StorageManager:
         post_folder = self.images_dir / f"{safe_kw}_{post.post_id}"
         post_folder.mkdir(parents=True, exist_ok=True)
 
-        downloaded_paths = []
-        for i, img_url in enumerate(post.image_urls):
-            img_filename = f"img_{i+1}.jpg"
-            target_path = post_folder / img_filename
-            try:
-                req = urllib.request.Request(img_url, headers={
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-                    "Referer": "https://www.facebook.com/",
-                })
-                with urllib.request.urlopen(req, timeout=15) as resp:
-                    with open(target_path, "wb") as f:
-                        f.write(resp.read())
-                downloaded_paths.append(str(target_path))
-            except Exception as e:
-                print(f"[Storage Warning] Failed to download image {i+1} for post {post.post_id}: {e}")
+        downloaded = []
+        for idx, img_url in enumerate(post.image_urls, 1):
+            if not img_url.startswith("http"):
+                continue
+            ext = ".jpg"
+            out_file = post_folder / f"img_{idx}{ext}"
+            if not out_file.exists():
+                try:
+                    req = urllib.request.Request(
+                        img_url,
+                        headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+                    )
+                    with urllib.request.urlopen(req, timeout=10) as response, open(out_file, "wb") as f:
+                        f.write(response.read())
+                    downloaded.append(str(out_file))
+                except Exception as e:
+                    print(f"[Storage Warning] Failed to download {img_url[:40]}...: {e}")
+            else:
+                downloaded.append(str(out_file))
 
-        post.local_images = downloaded_paths
-        return downloaded_paths
+        post.local_images = downloaded
+        return downloaded
 
     def save_to_json(self, posts: List[ScrapedPost], filename: str = "viral_posts.json") -> Path:
-        """Saves or updates JSON file with scraped posts (deduplicated by post_id)."""
+        """Saves or appends posts to a JSON database (deduplicated by post_id)."""
         file_path = self.reports_dir / filename
         existing_data = {}
 
         if file_path.exists():
             try:
                 with open(file_path, "r", encoding="utf-8") as f:
-                    old_items = json.load(f)
-                    for item in old_items:
+                    for item in json.load(f):
                         existing_data[item["post_id"]] = item
             except Exception:
                 pass
@@ -77,10 +81,10 @@ class StorageManager:
             with open(file_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
             posts = []
+            known_fields = {f.name for f in dataclasses.fields(ScrapedPost)}
             for item in data:
                 iu = item.get("image_urls", [])
                 if isinstance(iu, str):
-                    # Clean any corrupted joins like 'h; t; t; p'
                     if iu.startswith("h; t; t; p"):
                         iu = "".join([part for part in iu.split("; ")])
                     item["image_urls"] = [u.strip() for u in iu.split("; ") if u.strip()]
@@ -89,7 +93,10 @@ class StorageManager:
                     if li.startswith("d; a; t; a"):
                         li = "".join([part for part in li.split("; ")])
                     item["local_images"] = [l.strip() for l in li.split("; ") if l.strip()]
-                posts.append(ScrapedPost(**item))
+                
+                # Filter only known fields
+                filtered = {k: v for k, v in item.items() if k in known_fields}
+                posts.append(ScrapedPost(**filtered))
             return posts
         except Exception as e:
             print(f"[Storage Warning] load_all_posts error: {e}")

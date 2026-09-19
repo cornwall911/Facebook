@@ -5,6 +5,7 @@ from typing import List, Set
 from patchright.sync_api import Page
 from fb_winner_scout.config import ScoutConfig
 from fb_winner_scout.parser import ScrapedPost, parse_count
+from fb_winner_scout.product_classifier import classify_post_product
 
 JS_EXTRACT_POSTS = r"""
 () => {
@@ -172,14 +173,21 @@ class FacebookGroupCrawler:
 
     def search_group(self, group_id: str, keyword: str) -> List[ScrapedPost]:
         """
-        Navigates to group search page, scrolls, and collects posts matching criteria.
-        Fast in-browser JavaScript extraction.
+        Navigates to group search page (or global search if group_id is 'public'),
+        scrolls, and collects posts matching criteria.
         """
-        clean_group = group_id.strip().rstrip("/").split("/")[-1]
+        is_public = (group_id.strip().lower() in ("public", "facebook", "global", "all") or "search/posts" in group_id)
         encoded_kw = urllib.parse.quote(keyword.strip())
-        search_url = f"https://www.facebook.com/groups/{clean_group}/search/?q={encoded_kw}"
+        
+        if is_public:
+            clean_group = "Public Search"
+            search_url = f"https://www.facebook.com/search/posts/?q={encoded_kw}"
+            print(f"\n[Crawler] 🌐 Searching Global Facebook Public Posts for '{keyword}'...")
+        else:
+            clean_group = group_id.strip().rstrip("/").split("/")[-1]
+            search_url = f"https://www.facebook.com/groups/{clean_group}/search/?q={encoded_kw}"
+            print(f"\n[Crawler] 👥 Searching in group '{clean_group}' for keyword '{keyword}'...")
 
-        print(f"\n[Crawler] Searching in group '{clean_group}' for keyword '{keyword}'...")
         print(f"[Crawler] URL: {search_url}")
 
         try:
@@ -216,22 +224,39 @@ class FacebookGroupCrawler:
                 cm_cnt = parse_count(raw.get("comments_raw", ""))
                 sh_cnt = parse_count(raw.get("shares_raw", ""))
 
-                p_url = raw.get("post_url") or f"https://www.facebook.com/groups/{clean_group}/posts/{p_id}"
+                p_url = raw.get("post_url") or (f"https://www.facebook.com/groups/{clean_group}/posts/{p_id}" if not is_public else f"https://www.facebook.com/{p_id}")
+                caption = raw.get("caption", "")
+                img_urls = raw.get("image_urls", [])
+
+                # Run physical product classifier
+                is_prod, cat, amz_q, score = classify_post_product(caption, len(img_urls), keyword)
+
+                # Physical winner criteria: Must have product photos
+                if len(img_urls) == 0:
+                    continue
+
+                # Filter out obvious non-product exclusions (routes, complaints, chitchat)
+                if not is_prod and "استبعاد" in cat:
+                    continue
 
                 # Check viral threshold (high reactions OR high comments)
                 if rx_cnt >= self.config.min_reactions or cm_cnt >= 25:
-                    print(f"  [+] VIRAL POST FOUND: {rx_cnt} reactions, {cm_cnt} comments | {p_url}")
+                    print(f"  [+] 📦 WINNING PRODUCT FOUND: {cat} (Score: {score}/100) | 👍 {rx_cnt} rx, 💬 {cm_cnt} cm | {p_url}")
                     scraped_posts.append(ScrapedPost(
                         post_id=p_id,
                         post_url=p_url,
                         keyword=keyword,
                         group_id=clean_group,
                         author=raw.get("author", ""),
-                        caption=raw.get("caption", ""),
+                        caption=caption,
                         reactions_count=rx_cnt,
                         comments_count=cm_cnt,
                         shares_count=sh_cnt,
-                        image_urls=raw.get("image_urls", []),
+                        image_urls=img_urls,
+                        is_product=is_prod,
+                        product_category=cat,
+                        amazon_query=amz_q,
+                        winner_score=score,
                     ))
                 else:
                     if rx_cnt > 0:

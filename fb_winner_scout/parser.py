@@ -56,6 +56,10 @@ class ScrapedPost:
     shares_count: int = 0
     image_urls: List[str] = field(default_factory=list)
     local_images: List[str] = field(default_factory=list)
+    is_product: bool = False
+    product_category: str = ""
+    amazon_query: str = ""
+    winner_score: int = 0
 
     def to_dict(self) -> dict:
         imgs = self.image_urls if isinstance(self.image_urls, list) else [u.strip() for u in str(self.image_urls).split("; ") if u.strip()]
@@ -71,6 +75,10 @@ class ScrapedPost:
             "reactions_count": self.reactions_count,
             "comments_count": self.comments_count,
             "shares_count": self.shares_count,
+            "is_product": self.is_product,
+            "product_category": self.product_category,
+            "amazon_query": self.amazon_query,
+            "winner_score": self.winner_score,
             "image_urls": "; ".join(imgs),
             "local_images": "; ".join(locs),
         }

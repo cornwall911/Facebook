@@ -130,6 +130,10 @@ def generate_html_dashboard(posts: List[ScrapedPost], config: ScoutConfig, filen
         .btn-lens:hover {{ filter: brightness(1.1); }}
         .btn-sheet {{ background: #059669; color: white; grid-column: span 1; }}
         .btn-sheet:hover {{ background: #047857; }}
+        .btn-amazon {{ background: #ea580c; color: white; grid-column: span 1; text-decoration: none; }}
+        .btn-amazon:hover {{ background: #c2410c; }}
+        .prod-badge {{ background: #064e3b; color: #34d399; border: 1px solid #059669; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; }}
+        .score-badge {{ background: #78350f; color: #fde047; border: 1px solid #b45309; padding: 3px 6px; border-radius: 6px; font-size: 11px; font-weight: 700; }}
         .btn-angles-toggle {{ background: #7c3aed; color: white; grid-column: span 1; }}
         .btn-angles-toggle:hover {{ background: #6d28d9; }}
         .btn-secondary {{ background: #334155; color: #cbd5e1; grid-column: span 2; font-size: 11.5px; padding: 6px; }}
@@ -196,6 +200,13 @@ def generate_html_dashboard(posts: List[ScrapedPost], config: ScoutConfig, filen
                 <select id="keyword-select" class="select-control" onchange="applyFilters()">
                     <option value="all">كل الكلمات والنيشات</option>
                 </select>
+            </div>
+
+            <div class="control-item">
+                <label class="checkbox-control">
+                    <input type="checkbox" id="physical-only" checked onchange="applyFilters()">
+                    <span>📦 منتجات فيزيائية فقط</span>
+                </label>
             </div>
 
             <div class="control-item">
@@ -329,6 +340,7 @@ def generate_html_dashboard(posts: List[ScrapedPost], config: ScoutConfig, filen
             const minRx = parseInt(document.getElementById('min-rx-select').value) || 0;
             const kwFilter = document.getElementById('keyword-select').value;
             const hasImgOnly = document.getElementById('has-img-only').checked;
+            const physicalOnly = document.getElementById('physical-only') ? document.getElementById('physical-only').checked : false;
 
             let filtered = rawPosts.filter(p => {{
                 const st = getPostStatus(p.post_id);
@@ -343,8 +355,9 @@ def generate_html_dashboard(posts: List[ScrapedPost], config: ScoutConfig, filen
                 
                 const imgs = p.image_urls ? p.image_urls.split('; ').filter(Boolean) : [];
                 const matchesImg = !hasImgOnly || imgs.length > 0;
+                const matchesPhysical = !physicalOnly || (p.is_product && imgs.length > 0);
 
-                return matchesStatus && matchesQuery && matchesMinRx && matchesKw && matchesImg;
+                return matchesStatus && matchesQuery && matchesMinRx && matchesKw && matchesImg && matchesPhysical;
             }});
 
             // Apply Sorting
@@ -397,7 +410,11 @@ def generate_html_dashboard(posts: List[ScrapedPost], config: ScoutConfig, filen
 
                 card.innerHTML = `
                     <div class="card-header">
-                        <span class="badge">${{escapeHtml(p.keyword || 'Viral Post')}}</span>
+                        <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+                            <span class="badge">${{escapeHtml(p.keyword || 'Viral Post')}}</span>
+                            ${{p.is_product ? `<span class="prod-badge">📦 ${{escapeHtml(p.product_category || 'منتج فيزيائي')}}</span>` : ''}}
+                            ${{p.winner_score ? `<span class="score-badge">⭐ ${{p.winner_score}}/100</span>` : ''}}
+                        </div>
                         <div class="metrics">
                             <span class="rx" title="عدد اللايكات والتفاعلات">👍 ${{p.reactions_count.toLocaleString()}}</span>
                             <span class="cm" title="عدد التعليقات">💬 ${{p.comments_count.toLocaleString()}}</span>
@@ -453,6 +470,7 @@ def generate_html_dashboard(posts: List[ScrapedPost], config: ScoutConfig, filen
                     <div class="card-actions-grid">
                         <button class="btn btn-primary" onclick="copyCaption('${{encodeURIComponent(p.caption)}}')">📋 نسخ الكابشن</button>
                         ${{lensUrl ? `<a href="${{lensUrl}}" target="_blank" class="btn btn-lens">🔍 مطابقة (Lens)</a>` : `<button class="btn btn-lens" disabled style="opacity:0.4;">🔍 لا توجد صورة</button>`}}
+                        <a href="https://www.amazon.com/s?k=${{encodeURIComponent(p.amazon_query || p.keyword || 'rv gadget')}}" target="_blank" class="btn btn-amazon">🛒 بحث في أمازون</a>
                         <button class="btn btn-sheet" onclick="copySheetRow('${{p.post_id}}')">📑 نسخ لشيت أحمد</button>
                         <button class="btn btn-angles-toggle" onclick="toggleAngles('${{p.post_id}}')">✨ زوايا (1-to-5)</button>
                         <a href="${{p.post_url}}" target="_blank" class="btn btn-secondary">🔗 فتح البوست الأصلي في فيسبوك</a>
