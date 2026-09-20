@@ -123,9 +123,10 @@
         .btn { padding: 8px 10px; border-radius: 6px; font-size: 12px; font-weight: 700; text-align: center; text-decoration: none; cursor: pointer; border: none; transition: background 0.2s, transform 0.1s; display: flex; align-items: center; justify-content: center; gap: 5px; }
         .btn:active { transform: scale(0.98); }
         .btn-primary { background: var(--accent); color: white; grid-column: span 1; }
-        .btn-primary:hover { background: var(--accent-hover); }
-        .btn-lens { background: linear-gradient(135deg, #0ea5e9, #0284c7); color: white; grid-column: span 1; }
-        .btn-lens:hover { filter: brightness(1.1); }
+        .btn-lens { background: linear-gradient(135deg, #0ea5e9, #0284c7); color: white; grid-column: span 1; box-shadow: 0 2px 6px rgba(2, 132, 199, 0.3); text-decoration: none; }
+        .btn-lens:hover { background: linear-gradient(135deg, #38bdf8, #0ea5e9); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(2, 132, 199, 0.45); }
+        .img-lens-overlay { position: absolute; top: 10px; left: 10px; background: rgba(15, 23, 42, 0.88); backdrop-filter: blur(5px); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); border-radius: 20px; padding: 4px 10px; font-size: 11px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 5px; transition: all 0.2s ease; z-index: 10; text-decoration: none; box-shadow: 0 3px 10px rgba(0,0,0,0.6); }
+        .img-lens-overlay:hover { background: #0284c7; color: #ffffff; border-color: #38bdf8; transform: scale(1.05); }
         .btn-sheet { background: #059669; color: white; grid-column: span 1; }
         .btn-sheet:hover { background: #047857; }
         .btn-affiliate { background: #059669; color: white; grid-column: span 1; text-decoration: none; }
@@ -477,7 +478,13 @@
                     </div>
 
                     <div class="card-img-container">
-                        ${firstImg ? `<img id="main-img-${p.post_id}" src="${firstImg}" class="card-img" onerror="this.style.display='none'">` : '<div class="no-img">لا توجد صورة</div>'}
+                        ${firstImg ? `
+                            <a id="lens-overlay-${p.post_id}" href="${lensUrl}" target="_blank" class="img-lens-overlay" title="ابحث عن هذا المنتج وسعره بالصورة في Google Lens">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M3 7V5a2 2 0 0 1 2-2h2"></path><path d="M17 3h2a2 2 0 0 1 2 2v2"></path><path d="M21 17v2a2 2 0 0 1-2 2h-2"></path><path d="M7 21H5a2 2 0 0 1-2-2v-2"></path></svg>
+                                <span>Google Lens</span>
+                            </a>
+                            <img id="main-img-${p.post_id}" src="${firstImg}" class="card-img" onerror="this.style.display='none'">
+                        ` : '<div class="no-img">لا توجد صورة</div>'}
                     </div>
                     ${thumbsHtml}
 
@@ -499,7 +506,7 @@
                         <div class="angles-drawer" id="angles-${p.post_id}">
                             <div class="angle-item">
                                 <div class="angle-title">
-                                    <span>🎯 زاوية حل المشكلة (Pain Relief)</span>
+                                     <span>🎯 زاوية حل المشكلة (Pain Relief)</span>
                                     <button class="angle-copy-btn" onclick="copyText('Honestly didn\'t expect this to work so well, but it literally solved the problem during our last trip! Worth every penny. Anyone else using one?')">📋 نسخ</button>
                                 </div>
                                 <div class="angle-text">"Honestly didn't expect this to work so well, but it literally solved the problem during our last trip! Worth every penny. Anyone else using one?"</div>
@@ -526,7 +533,7 @@
                             `<button class="btn btn-primary" onclick="copyCaption('${encodeURIComponent(p.generated_caption)}')">📋 نسخ كابشن النشر</button>` : 
                             `<button class="btn btn-primary" onclick="copyCaption('${encodeURIComponent(p.caption)}')">📋 نسخ الكابشن الأصلي</button>`
                         }
-                        ${lensUrl ? `<a href="${lensUrl}" target="_blank" class="btn btn-lens">🔍 مطابقة (Lens)</a>` : `<button class="btn btn-lens" disabled style="opacity:0.4;">🔍 لا توجد صورة</button>`}
+                        ${lensUrl ? `<a id="lens-btn-${p.post_id}" href="${lensUrl}" target="_blank" class="btn btn-lens" title="البحث الفوري عن المنتج في Google Lens لمعرفة اسمه وسعره بدقة">🔍 بحث بالصورة (Google Lens)</a>` : `<button class="btn btn-lens" disabled style="opacity:0.4;">🔍 لا توجد صورة</button>`}
                         ${p.affiliate_url ? `<a href="${p.affiliate_url}" target="_blank" class="btn btn-affiliate">🔗 رابط المنتج المعروض</a>` : ''}
                         <a href="https://www.amazon.com/s?k=${encodeURIComponent(p.amazon_query || p.keyword || 'rv gadget')}" target="_blank" class="btn btn-amazon">🛒 بحث في أمازون</a>
                         <button class="btn btn-sheet" onclick="copySheetRow('${p.post_id}')">📑 نسخ لشيت أحمد</button>
@@ -544,6 +551,13 @@
             const parent = thumbElem.parentElement;
             parent.querySelectorAll('.thumb').forEach(t => t.classList.remove('active'));
             thumbElem.classList.add('active');
+
+            const encoded = encodeURIComponent(imgUrl);
+            const newLensUrl = `https://lens.google.com/uploadbyurl?url=${encoded}`;
+            const btn = document.getElementById('lens-btn-' + postId);
+            if (btn) btn.href = newLensUrl;
+            const overlay = document.getElementById('lens-overlay-' + postId);
+            if (overlay) overlay.href = newLensUrl;
         }
 
         function toggleAngles(postId) {
