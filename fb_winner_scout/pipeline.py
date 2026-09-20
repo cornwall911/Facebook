@@ -38,6 +38,22 @@ class ScoutPipeline:
         page = context.new_page()
 
         all_collected_posts: List[ScrapedPost] = []
+        seen_post_ids = set()
+        total_scanned_matches = 0
+        initial_db_posts = self.storage.load_all_posts()
+        initial_db_count = len(initial_db_posts)
+
+        def add_post_safely(p: ScrapedPost):
+            nonlocal total_scanned_matches
+            total_scanned_matches += 1
+            if p.post_id not in seen_post_ids:
+                seen_post_ids.add(p.post_id)
+                print(f"  [*] Downloading assets for post {p.post_id} ({len(p.image_urls)} images)...")
+                self.storage.download_post_images(p)
+                if p.is_product or p.winner_score > 0:
+                    print(f"  [✍️] Generating short social caption for post {p.post_id}...")
+                    p.generated_caption = self.copywriter.generate_caption(p)
+                all_collected_posts.append(p)
 
         try:
             # 2. Verify Login
@@ -62,12 +78,7 @@ class ScoutPipeline:
                     crawler = FacebookGroupCrawler(page, self.config)
                     feed_posts = crawler.search_group(clean_group, "")
                     for p in feed_posts:
-                        print(f"  [*] Downloading assets for post {p.post_id} ({len(p.image_urls)} images)...")
-                        self.storage.download_post_images(p)
-                        if p.is_product or p.winner_score > 0:
-                            print(f"  [✍️] Generating short social caption for post {p.post_id}...")
-                            p.generated_caption = self.copywriter.generate_caption(p)
-                        all_collected_posts.append(p)
+                        add_post_safely(p)
                     time.sleep(2.0)
 
                 # 3b. Search specific keywords
@@ -83,12 +94,7 @@ class ScoutPipeline:
 
                     # Download images and generate high-converting post caption
                     for p in posts:
-                        print(f"  [*] Downloading assets for post {p.post_id} ({len(p.image_urls)} images)...")
-                        self.storage.download_post_images(p)
-                        if p.is_product or p.winner_score > 0:
-                            print(f"  [✍️] Generating short social caption for post {p.post_id}...")
-                            p.generated_caption = self.copywriter.generate_caption(p)
-                        all_collected_posts.append(p)
+                        add_post_safely(p)
 
                     # Polite rest between searches
                     time.sleep(2.5)
@@ -102,15 +108,14 @@ class ScoutPipeline:
                 pin_scout = PinterestScout(page, self.config)
                 pin_posts = pin_scout.scout_all(max_per_query=8)
                 for p in pin_posts:
-                    self.storage.download_post_images(p)
-                    all_collected_posts.append(p)
+                    add_post_safely(p)
             except Exception as e:
                 print(f"[Warning] Pinterest scout step error: {e}")
 
             # 4. Export Results
             if all_collected_posts:
                 print("\n" + "=" * 55)
-                print(f"  🎉 SUCCESS! Collected {len(all_collected_posts)} viral posts.")
+                print(f"  🎉 SUCCESS! Collected {len(all_collected_posts)} unique viral posts.")
                 print("=" * 55)
                 excel_path = self.storage.save_to_excel(all_collected_posts)
                 json_path = self.storage.save_to_json(all_collected_posts)
@@ -134,8 +139,11 @@ class ScoutPipeline:
                 top_rx = sorted_p[0].reactions_count
                 top_url = sorted_p[0].post_url
 
+            new_unique = max(0, len(all_accumulated) - initial_db_count)
             self.notifier.notify_run_completed(
-                collected_count=len(all_collected_posts),
+                new_unique_count=new_unique,
+                total_unique_count=len(all_accumulated),
+                scanned_count=total_scanned_matches,
                 top_reactions=top_rx,
                 top_post_url=top_url,
                 total_groups=len(groups)

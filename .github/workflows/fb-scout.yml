@@ -14,7 +14,7 @@ on:
       min_reactions:
         description: 'Minimum reactions threshold'
         required: false
-        default: '10'
+        default: '2'
 
   schedule:
     # Runs automatically every 12 hours (00:00 UTC and 12:00 UTC)
@@ -50,7 +50,7 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           CLOUDFLARE_PAGES_URL: ${{ secrets.CLOUDFLARE_PAGES_URL }}
-          MIN_REACTIONS: ${{ github.event.inputs.min_reactions || '10' }}
+          MIN_REACTIONS: ${{ github.event.inputs.min_reactions || '2' }}
           PROXY_URL: ${{ secrets.PROXY_URL }}
           HEADLESS: 'true'
         run: |
@@ -75,6 +75,7 @@ jobs:
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add public/index.html index.html data/reports/
           git commit -m "chore(auto): update viral posts and dashboard" || echo "No changes to commit"
+          git pull --rebase origin main || true
           git push origin main || echo "Git push skipped"
 
       - name: Upload Artifacts (Excel & JSON & Images)

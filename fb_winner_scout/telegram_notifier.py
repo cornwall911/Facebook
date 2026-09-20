@@ -61,7 +61,15 @@ class TelegramNotifier:
         )
         return self.send_message(text)
 
-    def notify_run_completed(self, collected_count: int, top_reactions: int = 0, top_post_url: str = "", total_groups: int = 0) -> bool:
+    def notify_run_completed(
+        self,
+        new_unique_count: int,
+        total_unique_count: int,
+        scanned_count: int = 0,
+        top_reactions: int = 0,
+        top_post_url: str = "",
+        total_groups: int = 0
+    ) -> bool:
         """Sent when scraping completes successfully."""
         now_str = time.strftime("%Y-%m-%d %I:%M %p")
         
@@ -70,10 +78,14 @@ class TelegramNotifier:
             dash_link = f"\n🌐 <a href='{self.dashboard_url}'><b>فتح الداش بورد على Cloudflare ↗</b></a>\n"
 
         text = (
-            "✅ <b>اكتمل السحب بنجاح!</b>\n\n"
-            f"📊 <b>إجمالي البوستات الفايرال:</b> {collected_count} منشور\n"
-            f"👥 <b>الجروبات المفحوصة:</b> {total_groups}\n"
+            "✅ <b>اكتمل السحب وتحديث الداش بورد بنجاح!</b>\n\n"
+            f"📦 <b>إجمالي المنتجات المؤهلة في الداش بورد:</b> {total_unique_count} منتج فريد\n"
+            f"🆕 <b>منتجات جديدة أضيفت في هذا السحب:</b> +{new_unique_count} منتج\n"
         )
+        if scanned_count > 0:
+            text += f"🔍 <b>إجمالي عمليات الفحص والمطابقة:</b> {scanned_count} منشور\n"
+
+        text += f"👥 <b>الجروبات المفحوصة:</b> {total_groups}\n"
 
         if top_reactions > 0:
             text += f"🔥 <b>أعلى بوست تفاعلاً:</b> 👍 {top_reactions:,} لايك\n"
