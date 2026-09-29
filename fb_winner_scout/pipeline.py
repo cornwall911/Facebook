@@ -71,33 +71,48 @@ class ScoutPipeline:
                     continue
 
                 is_public = (clean_group.lower() in ("public", "facebook", "global", "all") or "search/posts" in clean_group)
+                is_hashtag = clean_group.lower().startswith("hashtag/") or "/hashtag/" in clean_group.lower()
+                is_watch = clean_group.lower().startswith("watch/") or "/watch/" in clean_group.lower()
 
-                # 3a. In groups, browse the main group feed directly to capture all recent hot member posts
-                if not is_public:
+                # 3a. Feed Crawling
+                if not (is_public or is_hashtag or is_watch):
                     print(f"\n---> [{g_idx}/{len(groups)}] 📰 Browsing Main Feed of Group: '{clean_group}'...")
                     crawler = FacebookGroupCrawler(page, self.config)
                     feed_posts = crawler.search_group(clean_group, "")
                     for p in feed_posts:
                         add_post_safely(p)
                     time.sleep(2.0)
-
-                # 3b. Search specific keywords
-                for k_idx, kw in enumerate(keywords, 1):
-                    clean_kw = kw.strip()
-                    if not clean_kw:
-                        continue
-
-                    print(f"\n---> [{g_idx}/{len(groups)}] Group: {clean_group} | [{k_idx}/{len(keywords)}] Keyword: '{clean_kw}'")
-                    
+                elif is_hashtag:
+                    print(f"\n---> [{g_idx}/{len(groups)}] 🌐 Browsing Public Hashtag Feed: '{clean_group}'...")
                     crawler = FacebookGroupCrawler(page, self.config)
-                    posts = crawler.search_group(clean_group, clean_kw)
-
-                    # Download images and generate high-converting post caption
-                    for p in posts:
+                    tag_posts = crawler.search_group(clean_group, "")
+                    for p in tag_posts:
                         add_post_safely(p)
+                    time.sleep(2.0)
+                elif is_watch:
+                    print(f"\n---> [{g_idx}/{len(groups)}] 🎥 Browsing Facebook Watch Video Feed: '{clean_group}'...")
+                    crawler = FacebookGroupCrawler(page, self.config)
+                    watch_posts = crawler.search_group(clean_group, "rv gadgets")
+                    for p in watch_posts:
+                        add_post_safely(p)
+                    time.sleep(2.0)
 
-                    # Polite rest between searches
-                    time.sleep(2.5)
+                # 3b. Keyword Search (inside groups and public search)
+                if not (is_hashtag or is_watch):
+                    for k_idx, kw in enumerate(keywords, 1):
+                        clean_kw = kw.strip()
+                        if not clean_kw:
+                            continue
+
+                        print(f"\n---> [{g_idx}/{len(groups)}] Source: {clean_group} | [{k_idx}/{len(keywords)}] Keyword: '{clean_kw}'")
+                        
+                        crawler = FacebookGroupCrawler(page, self.config)
+                        posts = crawler.search_group(clean_group, clean_kw)
+
+                        for p in posts:
+                            add_post_safely(p)
+
+                        time.sleep(2.0)
 
             # 3c. Also scout Pinterest for top viral RV ideas and space savers
             try:

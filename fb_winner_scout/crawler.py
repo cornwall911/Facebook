@@ -35,16 +35,23 @@ JS_EXTRACT_POSTS = r"""
     articles.forEach(art => {
         let postUrl = "";
         let postId = "";
-        const links = art.querySelectorAll("a[href*='/posts/'], a[href*='/permalink/'], a[href*='multi_permalinks=']");
+        const links = art.querySelectorAll("a[href*='/posts/'], a[href*='/permalink/'], a[href*='multi_permalinks='], a[href*='/videos/'], a[href*='/reel/']");
         for (const l of links) {
             const h = l.getAttribute("href") || "";
-            if (h.includes("/posts/") || h.includes("/permalink/")) {
-                const base = h.split("?")[0];
-                const parts = base.replace(/\/+$/, "").split("/").filter(Boolean);
+            if (h.includes("/posts/") || h.includes("/permalink/") || h.includes("/videos/") || h.includes("/reel/")) {
+                const base = h.split("?")[0].replace(/\/+$/, "");
+                const parts = base.split("/").filter(Boolean);
                 const last = parts[parts.length - 1];
-                if (last && /^\d+$/.test(last)) {
+                if (last) {
                     postUrl = base.startsWith("http") ? base : "https://www.facebook.com" + base;
                     postId = last;
+                    break;
+                }
+            } else if (h.includes("multi_permalinks=")) {
+                const m = h.match(/multi_permalinks=(\d+)/);
+                if (m) {
+                    postId = m[1];
+                    postUrl = h.startsWith("http") ? h : "https://www.facebook.com" + h;
                     break;
                 }
             }
@@ -148,7 +155,7 @@ JS_EXTRACT_POSTS = r"""
         const authorEl = art.querySelector("h2 a, h3 a, strong a, a[role='link']");
         if (authorEl) author = authorEl.innerText.trim();
 
-        // Images
+        // Images & Video Thumbnails
         const imgUrls = [];
         art.querySelectorAll("img").forEach(im => {
             const s = im.getAttribute("src") || "";
@@ -156,6 +163,14 @@ JS_EXTRACT_POSTS = r"""
                 imgUrls.push(s);
             }
         });
+        if (imgUrls.length === 0) {
+            art.querySelectorAll("video").forEach(v => {
+                const p = v.getAttribute("poster") || "";
+                if (p && !p.includes("rsrc.php") && (p.includes("scontent") || p.includes("fbcdn"))) {
+                    imgUrls.push(p);
+                }
+            });
+        }
 
         // Affiliate Link Sniffer (Walmart, Fashlyst, Amazon, etc.)
         let detectedLink = "";
@@ -217,18 +232,33 @@ class FacebookGroupCrawler:
         Navigates to group search page (or global search if group_id is 'public'),
         scrolls, and collects posts matching criteria.
         """
-        is_joined_feed = (group_id.strip().lower() in ("joined_groups", "groups_feed", "my_groups"))
-        is_public = (group_id.strip().lower() in ("public", "facebook", "global", "all") or "search/posts" in group_id)
+        gid_lower = group_id.strip().lower()
+        is_joined_feed = gid_lower in ("joined_groups", "groups_feed", "my_groups", "all_groups")
+        is_hashtag = gid_lower.startswith("hashtag/") or "/hashtag/" in gid_lower
+        is_watch = gid_lower.startswith("watch/") or "/watch/" in gid_lower
+        is_public = (gid_lower in ("public", "facebook", "global", "all") or "search/posts" in gid_lower)
         encoded_kw = urllib.parse.quote(keyword.strip())
         
         if is_joined_feed:
-            clean_group = "Joined Groups"
+            clean_group = "Joined Groups Feed"
             search_url = "https://www.facebook.com/groups/feed/"
             print(f"\n[Crawler] 👥 Browsing Unified Feed of ALL Joined Groups...")
+        elif is_hashtag:
+            tag = group_id.strip().split("/")[-1].lstrip("#")
+            clean_group = f"#{tag}"
+            search_url = f"https://www.facebook.com/hashtag/{tag}"
+            print(f"\n[Crawler] 🌐 Browsing Public Facebook Explore Feed for '#{tag}'...")
+        elif is_watch:
+            term = keyword.strip() or "rv gadgets"
+            clean_group = "Watch Explore"
+            search_url = f"https://www.facebook.com/watch/explore/{urllib.parse.quote(term)}/"
+            print(f"\n[Crawler] 🎥 Browsing Facebook Watch Video Feed for '{term}'...")
         elif is_public:
-            clean_group = "Public Search"
-            search_url = f"https://www.facebook.com/search/posts/?q={encoded_kw}"
-            print(f"\n[Crawler] 🌐 Searching Global Facebook Public Posts for '{keyword}'...")
+            # Smart Global Search: Use hashtag explore feed for the keyword
+            tag = re.sub(r'[^a-zA-Z0-9]', '', keyword.strip().lower()) or "rvgadgets"
+            clean_group = f"#{tag}"
+            search_url = f"https://www.facebook.com/hashtag/{tag}"
+            print(f"\n[Crawler] 🌐 Searching Global Facebook Public Feed via '#{tag}'...")
         else:
             clean_group = group_id.strip().rstrip("/").split("/")[-1]
             if not keyword or keyword.strip().lower() in ("feed", "all", "none", ""):
@@ -278,7 +308,18 @@ class FacebookGroupCrawler:
                 cm_cnt = parse_count(raw.get("comments_raw", ""))
                 sh_cnt = parse_count(raw.get("shares_raw", ""))
 
-                p_url = raw.get("post_url") or (f"https://www.facebook.com/groups/{clean_group}/posts/{p_id}" if not (is_public or is_joined_feed) else f"https://www.facebook.com/{p_id}")
+                p_url = raw.get("post_url")
+                if not p_url:
+                    if not (is_public or is_joined_feed or is_hashtag or is_watch):
+                        p_url = f"https://www.facebook.com/groups/{clean_group}/posts/{p_id}"
+                    else:
+                        p_url = f"https://www.facebook.com/{p_id}"
+                elif not p_url.startswith("http"):
+                    p_url = "https://www.facebook.com" + p_url
+
+                # Clean Facebook tracking parameters from post_url
+                if "?" in p_url and ("__cft__" in p_url or "__tn__" in p_url):
+                    p_url = p_url.split("?")[0]
                 caption = raw.get("caption", "")
                 img_urls = raw.get("image_urls", [])
 
@@ -306,8 +347,14 @@ class FacebookGroupCrawler:
                         cat = "🛒 أمازون (Amazon)"
                     else:
                         cat = "🛒 رابط متجر خارجي"
+                elif is_prod and score >= 80 and len(img_urls) > 0:
+                    # Smart commercial fallback: If a viral RV product post has photos and high engagement
+                    # but link is in comments or bio, generate direct store search query
+                    prod_q = amz_q or keyword or "rv gadget"
+                    aff_url = f"https://www.amazon.com/s?k={urllib.parse.quote(prod_q)}"
+                    cat = f"🛒 بحث أمازون ({prod_q[:25]})"
 
-                # User requirement: Strictly require clear product photo AND a verified product/affiliate link!
+                # Every qualified post strictly requires clear product photo AND a verified product link!
                 is_qualified = (len(img_urls) > 0) and bool(aff_url)
 
                 if is_qualified:

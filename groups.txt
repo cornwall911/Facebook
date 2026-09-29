@@ -1,11 +1,24 @@
+# ==========================================
+# Facebook Viral Scout - Target Sources
+# ==========================================
+
+# 1. Unified Feed of ALL Joined Groups (Auto-aggregates all user groups)
 joined_groups
-public
+
+# 2. Global Public Facebook Explore Feeds (Across all Facebook: creators, pages, public posts)
+hashtag/rvgadgets
+hashtag/rvaccessories
+hashtag/camperlife
+hashtag/rvhacks
+watch/explore
+
+# 3. Top Winning RV & Camper Communities
 https://www.facebook.com/groups/466434735988069/
-https://www.facebook.com/groups/1842777076228693/
+https://www.facebook.com/groups/RVhackcamp/
 https://www.facebook.com/groups/roadtreking/
-https://www.facebook.com/groups/713758696185516
-https://www.facebook.com/groups/825548446334240
-https://www.facebook.com/groups/144983496980739
+https://www.facebook.com/groups/1842777076228693/
+https://www.facebook.com/groups/713758696185516/
+https://www.facebook.com/groups/825548446334240/
+https://www.facebook.com/groups/144983496980739/
 https://www.facebook.com/groups/881186386331336/
 https://www.facebook.com/groups/1016323863626521/
-https://www.facebook.com/groups/RVhackcamp/

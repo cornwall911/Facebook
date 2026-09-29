@@ -1,22 +1,41 @@
+# ==========================================
+# Facebook Viral Scout - Target Keywords
+# ==========================================
+
+# 1. High-Intent RV Gadgets & Problem-Solvers
+rv gadgets
+camper must haves
+rv essentials
+travel trailer gadgets
+van life essentials
+rv organizer
+rv storage solutions
+rv kitchen gadgets
+camper upgrades
+rv camping accessories
+rv bathroom gadgets
+rv outdoor gadgets
+smart rv gadgets
+
+# 2. High-Converting Winning Commercial Products
+socket fan
+rechargeable bulb
+portable ice maker
+electric skillet
+evaporative cooler
+awning screen
+thin shade
+water pump dispenser
+collapsible trash can
+camera rain shield
+drawer organizer
+leveling blocks
+water pressure regulator
+rv surge protector
+
+# 3. Direct Affiliate Sniffers
 walmrt.us
 fashlyst.com
 amzn.to
-walmart finds
-walmrt.us rv
-walmrt.us camper
-fashlyst rv
 walmart finds rv
-amzn.to rv
-walmrt.us gadget
-walmrt.us organizer
-walmrt.us trash can
-hanging trash can
-camera rain shield
-socket fan
-ice maker
-electric skillet
-awning screen
-rechargeable bulb
-drawer organizer
-water pump dispenser
-camper gadgets
+amazon rv finds
