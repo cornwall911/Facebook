@@ -582,7 +582,10 @@ def generate_html_dashboard(posts: List[ScrapedPost], config: ScoutConfig, filen
                         <a href="https://www.amazon.com/s?k=${{encodeURIComponent(p.amazon_query || p.keyword || 'rv gadget')}}" target="_blank" class="btn btn-amazon">🛒 بحث في أمازون</a>
                         <button class="btn btn-sheet" onclick="copySheetRow('${{p.post_id}}')">📑 نسخ لشيت أحمد</button>
                         <button class="btn btn-angles-toggle" onclick="toggleAngles('${{p.post_id}}')">✨ زوايا (1-to-5)</button>
-                        <a href="${{p.post_url}}" target="_blank" class="btn btn-secondary">🔗 فتح البوست الأصلي في فيسبوك</a>
+                        ${{(p.post_url && p.post_url.includes('facebook.com') && (p.post_url.includes('/posts/') || p.post_url.includes('multi_permalinks=') || p.post_url.includes('/permalink/'))) ?
+                            `<a href="${{p.post_url}}" target="_blank" class="btn" style="background:#1877f2;color:white;font-weight:700;box-shadow:0 2px 6px rgba(24,119,242,0.35);" title="فتح المنشور الأصلي مباشرة داخل فيسبوك">🔗 فتح البوست الأصلي في فيسبوك</a>` :
+                            `<a href="${{p.post_url || 'https://www.facebook.com/groups/466434735988069'}}" target="_blank" class="btn" style="background:#0369a1;color:white;font-weight:700;" title="البحث عن المنشور داخل جروب فيسبوك">🔍 فتح المنشور بجروب فيسبوك</a>`
+                        }}
                     </div>
                 `;
                 grid.appendChild(card);
