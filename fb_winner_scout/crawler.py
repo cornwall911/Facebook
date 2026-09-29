@@ -307,14 +307,8 @@ class FacebookGroupCrawler:
                     else:
                         cat = "🛒 رابط متجر خارجي"
 
-                # User requirement: Must have photo + (affiliate link, or reaction/comment threshold, or score)
-                is_qualified = (len(img_urls) > 0) and (
-                    bool(aff_url) or 
-                    rx_cnt >= self.config.min_reactions or 
-                    cm_cnt >= 5 or 
-                    is_prod or 
-                    score >= 50
-                )
+                # User requirement: Strictly require clear product photo AND a verified product/affiliate link!
+                is_qualified = (len(img_urls) > 0) and bool(aff_url)
 
                 if is_qualified:
                     print(f"  [+] 📦 WINNING PRODUCT FOUND: {cat} (Score: {score}/100) | 👍 {rx_cnt} rx, 💬 {cm_cnt} cm | {p_url}")
