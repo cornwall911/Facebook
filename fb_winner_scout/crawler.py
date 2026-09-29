@@ -157,6 +157,39 @@ JS_EXTRACT_POSTS = r"""
             }
         });
 
+        // Affiliate Link Sniffer (Walmart, Fashlyst, Amazon, etc.)
+        let detectedLink = "";
+        const allAnchors = art.querySelectorAll("a[href]");
+        for (const a of allAnchors) {
+            let h = a.getAttribute("href") || "";
+            if (h.includes("l.facebook.com/l.php") && h.includes("u=")) {
+                try {
+                    const uMatch = h.match(/[?&]u=([^&]+)/);
+                    if (uMatch) h = decodeURIComponent(uMatch[1]);
+                } catch(e) {}
+            }
+            if (/walmrt\.us|fashlyst\.com|walmart\.com|amzn\.to|a\.co|amazon\.com|mavely|target\.com/i.test(h)) {
+                detectedLink = h;
+                break;
+            }
+        }
+
+        // Also check visible comments for affiliate links
+        if (!detectedLink) {
+            const commentEls = art.querySelectorAll("div[role='article'] div[dir='auto'], ul div[dir='auto']");
+            for (const cel of commentEls) {
+                const ct = cel.innerText || "";
+                const mLink = ct.match(/https?:\/\/[^\s\)\"\'>]+/);
+                if (mLink) {
+                    let cUrl = mLink[0];
+                    if (/walmrt\.us|fashlyst\.com|walmart\.com|amzn\.to|a\.co|amazon\.com|mavely/i.test(cUrl)) {
+                        detectedLink = cUrl;
+                        break;
+                    }
+                }
+            }
+        }
+
         results.push({
             post_id: postId,
             post_url: postUrl,
@@ -165,7 +198,8 @@ JS_EXTRACT_POSTS = r"""
             comments_raw: commentsRaw,
             shares_raw: sharesRaw,
             author: author,
-            image_urls: imgUrls
+            image_urls: imgUrls,
+            detected_link: detectedLink
         });
     });
 
@@ -183,10 +217,15 @@ class FacebookGroupCrawler:
         Navigates to group search page (or global search if group_id is 'public'),
         scrolls, and collects posts matching criteria.
         """
+        is_joined_feed = (group_id.strip().lower() in ("joined_groups", "groups_feed", "my_groups"))
         is_public = (group_id.strip().lower() in ("public", "facebook", "global", "all") or "search/posts" in group_id)
         encoded_kw = urllib.parse.quote(keyword.strip())
         
-        if is_public:
+        if is_joined_feed:
+            clean_group = "Joined Groups"
+            search_url = "https://www.facebook.com/groups/feed/"
+            print(f"\n[Crawler] 👥 Browsing Unified Feed of ALL Joined Groups...")
+        elif is_public:
             clean_group = "Public Search"
             search_url = f"https://www.facebook.com/search/posts/?q={encoded_kw}"
             print(f"\n[Crawler] 🌐 Searching Global Facebook Public Posts for '{keyword}'...")
@@ -239,7 +278,7 @@ class FacebookGroupCrawler:
                 cm_cnt = parse_count(raw.get("comments_raw", ""))
                 sh_cnt = parse_count(raw.get("shares_raw", ""))
 
-                p_url = raw.get("post_url") or (f"https://www.facebook.com/groups/{clean_group}/posts/{p_id}" if not is_public else f"https://www.facebook.com/{p_id}")
+                p_url = raw.get("post_url") or (f"https://www.facebook.com/groups/{clean_group}/posts/{p_id}" if not (is_public or is_joined_feed) else f"https://www.facebook.com/{p_id}")
                 caption = raw.get("caption", "")
                 img_urls = raw.get("image_urls", [])
 
@@ -254,17 +293,25 @@ class FacebookGroupCrawler:
                 if not is_prod and "استبعاد" in cat:
                     continue
 
-                # Extract direct product/affiliate link if present
-                aff_url = extract_affiliate_link(caption)
+                # Extract direct product/affiliate link if present (from DOM sniffer or caption)
+                aff_url = raw.get("detected_link", "") or extract_affiliate_link(caption)
                 if aff_url:
                     is_prod = True
-                    score = max(score, 90)
+                    score = 100
+                    if "walmrt.us" in aff_url or "walmart.com" in aff_url:
+                        cat = "🛒 وال مارت (Walmart)"
+                    elif "fashlyst.com" in aff_url:
+                        cat = "🛒 فاشلست (Fashlyst)"
+                    elif "amzn.to" in aff_url or "amazon.com" in aff_url:
+                        cat = "🛒 أمازون (Amazon)"
+                    else:
+                        cat = "🛒 رابط متجر خارجي"
 
-                # User requirement: Must have photo + (10+ rx, or 5+ cm, or product/affiliate link/score)
+                # User requirement: Must have photo + (affiliate link, or reaction/comment threshold, or score)
                 is_qualified = (len(img_urls) > 0) and (
+                    bool(aff_url) or 
                     rx_cnt >= self.config.min_reactions or 
                     cm_cnt >= 5 or 
-                    bool(aff_url) or 
                     is_prod or 
                     score >= 50
                 )

@@ -1,4 +1,5 @@
 import re
+import urllib.parse
 from dataclasses import dataclass, field
 from typing import List, Optional
 
@@ -41,17 +42,40 @@ def parse_count(text: Optional[str]) -> int:
             pass
 
     return 0
-
+ 
 def extract_affiliate_link(text: Optional[str]) -> str:
-    """Extracts direct product/affiliate URLs (e.g. walmrt.us, amzn.to, a.co, amazon, walmart)."""
+    """Extracts direct product/affiliate URLs (e.g. walmrt.us, fashlyst.com, walmart.com, amzn.to, a.co, amazon, mavely)."""
     if not text:
         return ""
-    m = re.search(r"https?://(?:[a-zA-Z0-9\-\.]+\.)?(?:walmrt\.us|amzn\.to|a\.co|walmart\.com|amazon\.com|bit\.ly|tinyurl\.com|target\.com)[^\s\)\"\'>]*", text)
+    
+    # Check for Facebook redirect links
+    if "l.facebook.com/l.php" in text:
+        try:
+            m_fb = re.search(r"https?://l\.facebook\.com/l\.php\?[^\s\)\"\'>]+", text)
+            if m_fb:
+                qs = urllib.parse.parse_qs(urllib.parse.urlparse(m_fb.group(0)).query)
+                u = qs.get("u", [""])[0]
+                if u:
+                    text = text + " " + urllib.parse.unquote(u)
+        except Exception:
+            pass
+
+    # High-priority affiliate & retailer domains
+    pattern = (
+        r"https?://(?:[a-zA-Z0-9\-\.]+\.)?"
+        r"(?:walmrt\.us|fashlyst\.com|walmart\.com|amzn\.to|a\.co|amazon\.com|mavely\.app|"
+        r"joinmavely\.com|liketk\.it|shopltk\.com|shopmy\.us|rstyle\.me|target\.com|bit\.ly|tinyurl\.com)"
+        r"[^\s\)\"\'>]*"
+    )
+    m = re.search(pattern, text, re.IGNORECASE)
     if m:
-        return m.group(0).rstrip(".,;")
+        return m.group(0).rstrip(".,;)")
+    
     m_gen = re.search(r"https?://[^\s\)\"\'>]+", text)
     if m_gen:
-        return m_gen.group(0).rstrip(".,;")
+        cand = m_gen.group(0).rstrip(".,;)")
+        if not ("facebook.com" in cand and "/l.php" not in cand):
+            return cand
     return ""
 
 @dataclass

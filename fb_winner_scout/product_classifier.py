@@ -86,10 +86,13 @@ def classify_post_product(caption: str, image_count: int, keyword: str = "") -> 
     text = (caption or "").lower()
     kw = (keyword or "").lower()
 
-    # 2. Check negative exclusions
-    for neg in NEGATIVE_PATTERNS:
-        if re.search(neg, text):
-            return False, "استبعاد (نقاش/سفر/شكوى)", "", 0
+    has_affiliate_link = bool(re.search(r"walmrt\.us|fashlyst\.com|walmart\.com|amzn\.to|a\.co|amazon\.com|target\.com|mavely", text))
+    
+    # 2. Check negative exclusions (only if no direct affiliate link)
+    if not has_affiliate_link:
+        for neg in NEGATIVE_PATTERNS:
+            if re.search(neg, text):
+                return False, "استبعاد (نقاش/سفر/شكوى)", "", 0
 
     # 3. Detect category & positive signals
     matched_category = "منتج فيزيائي (Physical Product)"
