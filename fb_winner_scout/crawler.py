@@ -280,7 +280,7 @@ class FacebookGroupCrawler:
     def scrape_group(
         self,
         group_target: str,
-        max_scrolls: int = 8,
+        max_scrolls: int = 15,
         search_queries: Optional[List[str]] = None
     ) -> Tuple[List[SourcePost], Dict[str, Any]]:
         """
@@ -364,21 +364,7 @@ class FacebookGroupCrawler:
             scroll_count += 1
             self._fierce_scroll()
 
-        # -------------------------------------------------------------
-        # Phase 2: In-Group Targeted Searches (if queries specified)
-        # High-intent terms (walmart, amazon, bought, gadget)
-        # -------------------------------------------------------------
-        if search_queries:
-            for query in search_queries:
-                search_posts = self.scrape_group_search(
-                    group_slug=group_slug,
-                    group_name=group_name,
-                    query=query,
-                    max_scrolls=4,
-                    seen_post_ids=seen_post_ids
-                )
-                stats["posts_with_link"] += len(search_posts)
-                source_posts.extend(search_posts)
+        # Stay on the native group feed to completely avoid Facebook's /search/?q= login wall
 
         print(f"[Crawler] Completed group '{group_name}' ({group_slug}): seen {stats['posts_seen']} posts, {stats['posts_with_link']} with outbound product link.")
         return source_posts, stats

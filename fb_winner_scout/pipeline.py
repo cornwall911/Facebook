@@ -74,7 +74,7 @@ class ScoutPipeline:
                 custom_terms = [k.strip() for k in (keywords or []) if k.strip() and not k.strip().startswith("#")]
                 search_terms = [t for t in high_intent_affiliate if t not in custom_terms] + custom_terms
                 search_terms = search_terms[:3]
-                posts, g_stats = crawler.scrape_group(clean_g, max_scrolls=8, search_queries=search_terms if search_terms else None)
+                posts, g_stats = crawler.scrape_group(clean_g, max_scrolls=12)
                 groups_stats.append({
                     "group": g_stats["group"],
                     "ok": g_stats["ok"],
@@ -87,11 +87,15 @@ class ScoutPipeline:
 
                 if not g_stats["ok"]:
                     errors.append(f"Group {clean_g}: {g_stats['error']}")
-                    # If checkpoint or block encountered, stop run immediately to avoid account harm
+                    # Check if session is truly broken before aborting entire pipeline
                     if g_stats["error"] and ("checkpoint" in g_stats["error"].lower() or "login" in g_stats["error"].lower()):
-                        print("[!] Stopping pipeline immediately due to session checkpoint or block.")
-                        session_status = "checkpoint"
-                        break
+                        recheck = session.check_session_status(page)
+                        if recheck != "logged-in":
+                            print(f"[!] Stopping pipeline: Session verification confirmed dead (status: '{recheck}').")
+                            session_status = recheck
+                            break
+                        else:
+                            print(f"[*] Group {clean_g} had a navigation block, but global session is still active. Continuing to next group...")
 
                 # Respectful inter-group delay (3 to 6 seconds)
                 if idx < len(groups):

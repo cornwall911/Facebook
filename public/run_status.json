@@ -1,19 +1,31 @@
 {
-  "started_at": "2026-10-29T14:57:16Z",
-  "finished_at": "2026-10-29T14:57:24Z",
-  "session": "checkpoint",
+  "started_at": "2026-10-29T16:15:16Z",
+  "finished_at": "2026-10-29T16:16:01Z",
+  "session": "logged-in",
   "groups": [
     {
-      "group": "1842777076228693",
-      "ok": false,
+      "group": "1016323863626521",
+      "ok": true,
+      "posts_seen": 27,
+      "posts_with_link": 2,
+      "error": null
+    },
+    {
+      "group": "RVhackcamp",
+      "ok": true,
+      "posts_seen": 27,
+      "posts_with_link": 0,
+      "error": null
+    },
+    {
+      "group": "713758696185516",
+      "ok": true,
       "posts_seen": 0,
       "posts_with_link": 0,
-      "error": "Redirected to login on group navigation"
+      "error": null
     }
   ],
-  "total_written": 0,
+  "total_written": 2,
   "data_source": "live",
-  "errors": [
-    "Group https://www.facebook.com/groups/1842777076228693/: Redirected to login on group navigation"
-  ]
+  "errors": []
 }
