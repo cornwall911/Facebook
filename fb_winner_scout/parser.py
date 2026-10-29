@@ -234,3 +234,124 @@ class ScrapedPost:
             "image_urls": "; ".join(imgs),
             "local_images": "; ".join(locs),
         }
+
+
+def parse_post_with_scrapling(html: str, group_slug: str = "", group_name: str = ""):
+    """
+    Parses a single Facebook post HTML container using Scrapling's Selector.
+    Extracts post_id, clean post_url, caption text, outbound product link,
+    engagement metrics (reactions, comments, shares), timestamp, and image URL.
+    Returns SourcePost if valid post_id and outbound product link exist, else None.
+    """
+    if not html or len(html.strip()) < 20:
+        return None
+
+    try:
+        from scrapling.parser import Selector
+        sel = Selector(html)
+    except Exception:
+        return None
+
+    # 1. Post ID and Post URL
+    post_id = None
+    post_url = None
+    
+    candidate_links = sel.css("a[href*='/posts/'], a[href*='/permalink/'], a[href*='multi_permalinks=']::attr(href)").getall()
+    for l in candidate_links:
+        m = re.search(r"/posts/(\d+)", l) or re.search(r"multi_permalinks=(\d+)", l) or re.search(r"/permalink/(\d+)", l)
+        if m:
+            post_id = m.group(1)
+            base = l.split("?")[0].rstrip("/")
+            post_url = base + "/" if base.startswith("http") else f"https://www.facebook.com{base}/"
+            break
+
+    if not post_id:
+        return None
+
+    # 2. Caption
+    caption = ""
+    msg_nodes = sel.css("div[dir='auto'][style*='text-align'], div[data-ad-preview='message'], div[data-ad-comet-preview='message']")
+    if msg_nodes:
+        caption = " ".join([t.strip() for t in msg_nodes[0].css("::text").getall() if t.strip()])
+    if not caption:
+        dir_nodes = sel.css("div[dir='auto']")
+        for d in dir_nodes:
+            t = " ".join([txt.strip() for txt in d.css("::text").getall() if txt.strip()])
+            if len(t) > 25 and not any(w in t for w in ["Like", "Comment", "Share"]):
+                caption = t
+                break
+
+    # 3. Outbound links
+    outbound_links = []
+    for href in sel.css("a[href]::attr(href)").getall():
+        cleaned = extract_outbound_link(href)
+        if cleaned and cleaned not in outbound_links:
+            outbound_links.append(cleaned)
+
+    # Search within caption text for short links
+    if caption:
+        for m_url in re.findall(r"https?://[^\s\)'\"]+", caption):
+            cleaned = extract_outbound_link(m_url)
+            if cleaned and cleaned not in outbound_links:
+                outbound_links.append(cleaned)
+
+    if not outbound_links:
+        return None
+
+    product_url = outbound_links[0]
+
+    # 4. Reactions
+    reactions = None
+    aria_texts = sel.css("[aria-label]::attr(aria-label)").getall()
+    for a in aria_texts:
+        if re.search(r"like|reactions?|people", a, re.I) and re.search(r"\d+", a):
+            reactions = parse_count(a)
+            if reactions is not None:
+                break
+    if reactions is None:
+        tb_texts = sel.css("span[role='toolbar'] *::text").getall()
+        if tb_texts:
+            reactions = parse_count(" ".join(tb_texts))
+
+    # 5. Comments & Shares
+    comments = None
+    shares = None
+    for t in sel.css("span::text, div::text").getall():
+        t = t.strip()
+        m_c = re.match(r"^([\d\.,kKmM]+)\s*comments?$", t, re.I)
+        if m_c and comments is None:
+            comments = parse_count(m_c.group(1))
+        m_s = re.match(r"^([\d\.,kKmM]+)\s*shares?$", t, re.I)
+        if m_s and shares is None:
+            shares = parse_count(m_s.group(1))
+
+    # 6. Timestamp
+    posted_at = None
+    for t in sel.css(f"a[href*='{post_id}'] *::text, a[href*='/posts/'] *::text").getall():
+        p_time = parse_posted_at(t.strip())
+        if p_time:
+            posted_at = p_time
+            break
+
+    # 7. Image
+    imgs = sel.css("img[src*='scontent'], img[src*='fbcdn']::attr(src)").getall()
+    image_url = imgs[0] if imgs else None
+
+    if not post_url:
+        post_url = f"https://www.facebook.com/groups/{group_slug}/posts/{post_id}/"
+
+    return SourcePost(
+        post_id=post_id,
+        post_url=post_url,
+        group=group_slug,
+        group_name=group_name or group_slug,
+        caption=caption,
+        product_url=product_url,
+        reactions=reactions,
+        comments=comments,
+        shares=shares,
+        posted_at=posted_at,
+        image_url=image_url,
+        scraped_at=datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        data_source="live"
+    )

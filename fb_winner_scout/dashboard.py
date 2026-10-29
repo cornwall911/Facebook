@@ -248,7 +248,7 @@ def generate_html_dashboard(posts: List[Any], config: ScoutConfig, filename: str
 
             <div class="control-item">
                 <label class="checkbox-control">
-                    <input type="checkbox" id="physical-only" checked onchange="applyFilters()">
+                    <input type="checkbox" id="physical-only" onchange="applyFilters()">
                     <span>📦 منتجات فيزيائية فقط</span>
                 </label>
             </div>
@@ -446,7 +446,8 @@ def generate_html_dashboard(posts: List[Any], config: ScoutConfig, filename: str
                 
                 const imgs = p.image_urls ? p.image_urls.split('; ').filter(Boolean) : (p.image_url ? [p.image_url] : []);
                 const matchesImg = !hasImgOnly || imgs.length > 0;
-                const matchesPhysical = !physicalOnly || (p.is_product && imgs.length > 0);
+                const isProd = (p.is_product !== false) && (p.is_product || !!(p.product_url || p.affiliate_url));
+                const matchesPhysical = !physicalOnly || (isProd && imgs.length > 0);
 
                 return matchesStatus && matchesClicks && matchesAffiliate && matchesQuery && matchesPlatform && matchesMinRx && matchesKw && matchesImg && matchesPhysical;
             }});

@@ -85,8 +85,8 @@ def main():
         from fb_winner_scout.dashboard import generate_html_dashboard
         config = ScoutConfig.from_env()
         storage = StorageManager(config)
-        posts = storage.load_source_posts()
-        print(f"[*] Loaded {len(posts)} live source posts. Regenerating dashboard...")
+        posts = storage.load_all_dashboard_posts()
+        print(f"[*] Loaded {len(posts)} unified dashboard posts. Regenerating dashboard...")
         generate_html_dashboard(posts, config)
 
     else:

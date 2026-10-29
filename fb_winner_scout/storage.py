@@ -84,6 +84,113 @@ class StorageManager:
         self.save_source_posts(merged_list)
         return merged_list
 
+    def load_all_dashboard_posts(self) -> list:
+        """
+        Unifies and normalizes all available post datasets:
+        1. Historical viral posts (public/viral_posts.json)
+        2. Verified catalog posts (public/catalog_posts.json)
+        3. Live scraped source posts (public/source_posts.json)
+
+        Returns deduplicated list with standardized fields so frontend
+        never crashes or filters out items inadvertently.
+        """
+        all_posts_map = {}
+
+        def _read_json_file(p: Path) -> list:
+            if not p.exists():
+                return []
+            try:
+                with open(p, "r", encoding="utf-8") as f:
+                    content = json.load(f)
+                    return content if isinstance(content, list) else []
+            except Exception as e:
+                print(f"[Storage Warning] Could not read {p}: {e}")
+                return []
+
+        # 1. Historical viral posts
+        v_posts = _read_json_file(self.public_dir / "viral_posts.json") or _read_json_file(self.reports_dir / "viral_posts.json")
+        for item in v_posts:
+            pid = str(item.get("post_id", "")).strip()
+            if pid:
+                all_posts_map[pid] = dict(item)
+
+        # 2. Verified catalog posts
+        c_posts = _read_json_file(self.public_dir / "catalog_posts.json") or _read_json_file(self.reports_dir / "catalog_posts.json")
+        for item in c_posts:
+            pid = str(item.get("post_id", "")).strip()
+            if pid:
+                if pid in all_posts_map:
+                    all_posts_map[pid].update(item)
+                else:
+                    all_posts_map[pid] = dict(item)
+
+        # 3. Live source posts (highest fidelity for live metrics)
+        s_posts = _read_json_file(self.source_posts_path)
+        for item in s_posts:
+            pid = str(item.get("post_id", "")).strip()
+            if pid:
+                if pid in all_posts_map:
+                    all_posts_map[pid].update(item)
+                else:
+                    all_posts_map[pid] = dict(item)
+
+        # Normalize each item
+        normalized = []
+        for pid, p in all_posts_map.items():
+            product_url = p.get("product_url") or p.get("affiliate_url") or ""
+            affiliate_url = p.get("affiliate_url") or p.get("product_url") or ""
+
+            # Standardize reactions / comments / shares
+            rx = p.get("reactions") if p.get("reactions") is not None else p.get("reactions_count")
+            cm = p.get("comments") if p.get("comments") is not None else p.get("comments_count")
+            sh = p.get("shares") if p.get("shares") is not None else p.get("shares_count")
+
+            # Standardize images
+            imgs_val = p.get("image_urls")
+            if isinstance(imgs_val, list):
+                imgs_str = "; ".join(imgs_val)
+                first_img = imgs_val[0] if imgs_val else (p.get("image_url") or "")
+            elif isinstance(imgs_val, str) and imgs_val:
+                imgs_str = imgs_val
+                first_img = imgs_val.split("; ")[0].strip()
+            else:
+                first_img = p.get("image_url") or ""
+                imgs_str = first_img
+
+            is_prod = bool(p.get("is_product") or product_url or affiliate_url)
+
+            norm_item = {
+                "post_id": pid,
+                "post_url": p.get("post_url") or f"https://www.facebook.com/posts/{pid}/",
+                "keyword": p.get("keyword") or p.get("group_name") or "RV Product",
+                "group_id": p.get("group_id") or p.get("group") or "RV Community",
+                "group_name": p.get("group_name") or p.get("group_id") or "RV Living & Camping",
+                "author": p.get("author") or "RV Community Member",
+                "caption": p.get("caption") or "",
+                "generated_caption": p.get("generated_caption") or "",
+                "product_url": product_url,
+                "affiliate_url": affiliate_url,
+                "reactions": rx,
+                "reactions_count": rx or 0,
+                "comments": cm,
+                "comments_count": cm or 0,
+                "shares": sh,
+                "shares_count": sh or 0,
+                "clicks_count": p.get("clicks_count", 0),
+                "is_product": is_prod,
+                "product_category": p.get("product_category") or "منتجات وأجهزة الكرفان",
+                "amazon_query": p.get("amazon_query") or p.get("keyword") or "rv gadget",
+                "winner_score": p.get("winner_score") or 95,
+                "image_urls": imgs_str,
+                "image_url": first_img,
+                "posted_at": p.get("posted_at") or p.get("timestamp") or "",
+                "data_source": p.get("data_source") or "live"
+            }
+            normalized.append(norm_item)
+
+        print(f"[Storage] Loaded {len(normalized)} unified posts for dashboard.")
+        return normalized
+
     # =========================================================================
     # CONTRACT C: public/run_status.json
     # =========================================================================

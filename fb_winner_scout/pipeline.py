@@ -69,7 +69,8 @@ class ScoutPipeline:
                     continue
 
                 print(f"\n---> [{idx}/{len(groups)}] Processing Group: {clean_g}")
-                posts, g_stats = crawler.scrape_group(clean_g, max_scrolls=6)
+                search_terms = [k.strip() for k in (keywords or []) if k.strip() and not k.strip().startswith("#")][:3]
+                posts, g_stats = crawler.scrape_group(clean_g, max_scrolls=8, search_queries=search_terms if search_terms else None)
                 groups_stats.append({
                     "group": g_stats["group"],
                     "ok": g_stats["ok"],
@@ -98,9 +99,10 @@ class ScoutPipeline:
             merged_posts = self.storage.merge_source_posts(all_new_posts)
             total_written = len(all_new_posts)
 
-            # 4. Generate Dashboard from live data
+            # 4. Generate Dashboard from unified data (live source + catalog)
             try:
-                generate_html_dashboard(merged_posts, self.config)
+                unified_posts = self.storage.load_all_dashboard_posts()
+                generate_html_dashboard(unified_posts, self.config)
             except Exception as e:
                 print(f"[Dashboard Warning] Could not regenerate dashboard: {e}")
 
