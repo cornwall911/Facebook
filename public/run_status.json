@@ -1,19 +1,17 @@
 {
-  "started_at": "2026-10-29T02:01:09Z",
-  "finished_at": "2026-10-29T02:01:17Z",
-  "session": "checkpoint",
+  "started_at": "2026-10-29T05:53:18Z",
+  "finished_at": "2026-10-29T05:54:22Z",
+  "session": "logged-in",
   "groups": [
     {
       "group": "466434735988069",
-      "ok": false,
-      "posts_seen": 0,
-      "posts_with_link": 0,
-      "error": "Redirected to login on group navigation"
+      "ok": true,
+      "posts_seen": 88,
+      "posts_with_link": 18,
+      "error": null
     }
   ],
-  "total_written": 0,
+  "total_written": 18,
   "data_source": "live",
-  "errors": [
-    "Group https://www.facebook.com/groups/466434735988069/: Redirected to login on group navigation"
-  ]
+  "errors": []
 }
