@@ -48,33 +48,54 @@ class FacebookSession:
 
         return self.context
 
-    def verify_login(self, page: Page) -> bool:
-        """Checks if the injected session is currently logged into Facebook."""
+    def check_session_status(self, page: Page) -> str:
+        """
+        Navigates to Facebook home and verifies authentication status.
+        Returns exactly one of: 'logged-in' | 'logged-out' | 'checkpoint'.
+        Strictly avoids attempting to bypass login walls or checkpoints.
+        """
         try:
             page.goto("https://www.facebook.com/", wait_until="domcontentloaded", timeout=30000)
             time.sleep(3)
-            # Check if login form is displayed or feed/home
-            url = page.url
-            if "login" in url or "checkpoint" in url:
-                print(f"[Session Error] Not logged in. Redirected to: {url}")
-                return False
+            url = page.url.lower()
 
-            # Check for common logged-in elements
+            if "checkpoint" in url:
+                print(f"[Session] Checkpoint detected at: {url}")
+                return "checkpoint"
+
+            if "login" in url:
+                print(f"[Session] Redirected to login: {url}")
+                return "logged-out"
+
+            # Check if login input form exists
+            is_login_page = page.locator("input[name='email'], input#email").count() > 0
+            if is_login_page:
+                print("[Session] Login input form detected on page.")
+                return "logged-out"
+
+            # Check for standard logged-in markers
             has_feed = page.locator("div[role='feed'], div[role='main'], div[aria-label='Facebook']").count() > 0
             if has_feed:
                 print("[Session] Successfully verified Facebook logged-in session!")
-                return True
+                return "logged-in"
 
-            # If page doesn't have login inputs, we might be logged in
-            is_login_page = page.locator("input[name='email'], input#email").count() > 0
-            if not is_login_page:
-                print("[Session] Logged-in session appears active.")
-                return True
+            # Check body text for keywords
+            body_text = page.inner_text("body").lower()
+            if "checkpoint" in body_text:
+                return "checkpoint"
+            if "log in" in body_text and "sign up" in body_text:
+                return "logged-out"
 
-            return False
+            print("[Session] Logged-in session appears active.")
+            return "logged-in"
+
         except Exception as e:
             print(f"[Session] Verification check error: {e}")
-            return False
+            return "logged-out"
+
+    def verify_login(self, page: Page) -> bool:
+        """Convenience wrapper for backwards compatibility."""
+        return self.check_session_status(page) == "logged-in"
 
     def close(self):
         if self.context:

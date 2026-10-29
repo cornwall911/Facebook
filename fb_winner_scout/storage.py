@@ -3,9 +3,9 @@ import os
 import json
 import urllib.request
 from pathlib import Path
-from typing import List
+from typing import List, Dict, Optional, Any
 import pandas as pd
-from fb_winner_scout.parser import ScrapedPost
+from fb_winner_scout.parser import ScrapedPost, SourcePost
 from fb_winner_scout.config import ScoutConfig
 
 class StorageManager:
@@ -14,9 +14,111 @@ class StorageManager:
         self.base_dir = config.output_dir
         self.images_dir = self.base_dir / "images"
         self.reports_dir = self.base_dir / "reports"
+        self.public_dir = Path("public")
 
         self.images_dir.mkdir(parents=True, exist_ok=True)
         self.reports_dir.mkdir(parents=True, exist_ok=True)
+        self.public_dir.mkdir(parents=True, exist_ok=True)
+
+        self.source_posts_path = self.public_dir / "source_posts.json"
+        self.run_status_path = self.public_dir / "run_status.json"
+
+    # =========================================================================
+    # CONTRACT B: public/source_posts.json (Live Scraped Posts)
+    # =========================================================================
+
+    def load_source_posts(self) -> List[SourcePost]:
+        """Loads all existing live source posts from public/source_posts.json."""
+        if not self.source_posts_path.exists():
+            return []
+        try:
+            with open(self.source_posts_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            posts = []
+            known_fields = {f.name for f in dataclasses.fields(SourcePost)}
+            for item in data:
+                filtered = {k: v for k, v in item.items() if k in known_fields}
+                posts.append(SourcePost(**filtered))
+            return posts
+        except Exception as e:
+            print(f"[Storage Warning] Failed to load {self.source_posts_path}: {e}")
+            return []
+
+    def save_source_posts(self, posts: List[SourcePost]) -> Path:
+        """Saves a list of SourcePost objects to public/source_posts.json."""
+        data = [p.to_dict() for p in posts]
+        with open(self.source_posts_path, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        print(f"[Storage] Saved {len(data)} live posts to {self.source_posts_path}")
+        return self.source_posts_path
+
+    def merge_source_posts(self, new_posts: List[SourcePost]) -> List[SourcePost]:
+        """
+        Deduplicates posts by post_id across runs:
+        - If post_id exists: keeps first_seen/posted_at, updates reactions/comments/shares
+          with latest non-null values, and updates scraped_at.
+        - If post_id is new: appends it.
+        """
+        existing = self.load_source_posts()
+        merged_map: Dict[str, SourcePost] = {p.post_id: p for p in existing}
+
+        for np in new_posts:
+            if np.post_id in merged_map:
+                old = merged_map[np.post_id]
+                # Update engagement metrics if new value was successfully read
+                if np.reactions is not None:
+                    old.reactions = np.reactions
+                if np.comments is not None:
+                    old.comments = np.comments
+                if np.shares is not None:
+                    old.shares = np.shares
+                if np.image_url and not old.image_url:
+                    old.image_url = np.image_url
+                if not old.posted_at and np.posted_at:
+                    old.posted_at = np.posted_at
+                old.scraped_at = np.scraped_at
+            else:
+                merged_map[np.post_id] = np
+
+        merged_list = list(merged_map.values())
+        self.save_source_posts(merged_list)
+        return merged_list
+
+    # =========================================================================
+    # CONTRACT C: public/run_status.json
+    # =========================================================================
+
+    def save_run_status(
+        self,
+        started_at: str,
+        finished_at: str,
+        session: str,
+        groups: List[Dict[str, Any]],
+        total_written: int,
+        errors: Optional[List[str]] = None,
+        data_source: str = "live"
+    ) -> Path:
+        """
+        Writes the run status file public/run_status.json.
+        Always written at the end of every run, including when it fails.
+        """
+        status_payload = {
+            "started_at": started_at,
+            "finished_at": finished_at,
+            "session": session,
+            "groups": groups,
+            "total_written": total_written,
+            "data_source": data_source,
+            "errors": errors or []
+        }
+        with open(self.run_status_path, "w", encoding="utf-8") as f:
+            json.dump(status_payload, f, ensure_ascii=False, indent=2)
+        print(f"[Storage] Run status recorded in {self.run_status_path}")
+        return self.run_status_path
+
+    # =========================================================================
+    # LEGACY / ARTIFACT HELPERS (Images, Excel, Internal Reports)
+    # =========================================================================
 
     def download_post_images(self, post: ScrapedPost) -> List[str]:
         """Downloads full-res images for a post into its dedicated folder."""
@@ -51,7 +153,7 @@ class StorageManager:
         return downloaded
 
     def save_to_json(self, posts: List[ScrapedPost], filename: str = "viral_posts.json") -> Path:
-        """Saves or appends posts to a JSON database (deduplicated by post_id)."""
+        """Saves posts to internal reports json."""
         file_path = self.reports_dir / filename
         existing_data = {}
 
@@ -73,7 +175,7 @@ class StorageManager:
         return file_path
 
     def load_all_posts(self, filename: str = "viral_posts.json") -> List[ScrapedPost]:
-        """Loads all accumulated posts from the database."""
+        """Loads posts from internal reports json."""
         file_path = self.reports_dir / filename
         if not file_path.exists():
             return []
@@ -94,7 +196,6 @@ class StorageManager:
                         li = "".join([part for part in li.split("; ")])
                     item["local_images"] = [l.strip() for l in li.split("; ") if l.strip()]
                 
-                # Filter only known fields
                 filtered = {k: v for k, v in item.items() if k in known_fields}
                 posts.append(ScrapedPost(**filtered))
             return posts
@@ -103,7 +204,7 @@ class StorageManager:
             return []
 
     def save_to_excel(self, posts: List[ScrapedPost], filename: str = "viral_posts.xlsx") -> Path:
-        """Saves or appends posts to an Excel spreadsheet (deduplicated by post_id)."""
+        """Saves posts to an Excel spreadsheet."""
         file_path = self.reports_dir / filename
         new_df = pd.DataFrame([p.to_dict() for p in posts])
 
@@ -117,11 +218,9 @@ class StorageManager:
         else:
             combined = new_df
 
-        # Sort by reactions descending
         if "reactions_count" in combined.columns:
             combined = combined.sort_values(by="reactions_count", ascending=False)
 
-        # Reorder columns for optimal user reading
         cols_order = [
             "keyword", "reactions_count", "comments_count", "shares_count",
             "post_url", "caption", "generated_caption", "local_images", "author", "group_id", "post_id"

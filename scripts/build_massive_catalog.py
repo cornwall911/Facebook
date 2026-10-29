@@ -37,7 +37,7 @@ def infer_product_category(text, group_name):
 
 def main():
     # 1. Existing 29 verified live posts
-    current_posts = json.load(open("data/reports/viral_posts.json", encoding="utf-8"))
+    current_posts = json.load(open("data/reports/catalog_posts.json", encoding="utf-8"))
     print(f"Loaded {len(current_posts)} currently verified live posts.")
 
     # 2. Resolved media posts
@@ -56,7 +56,9 @@ def main():
             continue
         seen_urls.add(purl)
         seen_ids.add(pid)
-        master_catalog.append(p)
+        p_copy = dict(p)
+        p_copy["data_source"] = "catalog"
+        master_catalog.append(p_copy)
 
     # Now integrate resolved media posts
     for item in resolved_media:
@@ -106,7 +108,8 @@ def main():
             "amazon_query": amz_query,
             "winner_score": 93,
             "affiliate_url": aff,
-            "image_urls": img
+            "image_urls": img,
+            "data_source": "catalog"
         })
 
     print(f"\n==========================================")
@@ -115,13 +118,13 @@ def main():
     print(f"==========================================")
 
     # Save to data/reports and public
-    with open("data/reports/viral_posts.json", "w", encoding="utf-8") as f:
+    with open("data/reports/catalog_posts.json", "w", encoding="utf-8") as f:
         json.dump(master_catalog, f, ensure_ascii=False, indent=2)
 
-    with open("public/viral_posts.json", "w", encoding="utf-8") as f:
+    with open("public/catalog_posts.json", "w", encoding="utf-8") as f:
         json.dump(master_catalog, f, ensure_ascii=False, indent=2)
 
-    print("Saved expanded catalog to data/reports/viral_posts.json & public/viral_posts.json!")
+    print("Saved expanded catalog to data/reports/catalog_posts.json & public/catalog_posts.json!")
 
 if __name__ == "__main__":
     main()

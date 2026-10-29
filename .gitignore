@@ -23,3 +23,14 @@ Thumbs.db
 
 # Agent skills
 .agents/
+
+# Scratch & investigation files
+scripts/crawl_fresh_live_posts.py
+scripts/debug_*.py
+scripts/find_*.py
+scripts/harvest_rv_pages.py
+scripts/inspect_*.py
+scripts/test_*.py
+data/reports/*.json
+!data/reports/catalog_posts.json
+facebook_affiliate_course_playbook.md

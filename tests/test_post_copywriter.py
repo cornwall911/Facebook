@@ -1,3 +1,4 @@
+import json
 import pytest
 from unittest.mock import patch, MagicMock
 from fb_winner_scout.post_copywriter import (
@@ -80,6 +81,7 @@ def test_gemini_api_mock_success():
         is_product=True
     )
     fake_response = MagicMock()
+    fake_response.__enter__.return_value = fake_response
     fake_response.read.return_value = json.dumps({
         "candidates": [{
             "content": {

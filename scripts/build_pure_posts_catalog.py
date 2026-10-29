@@ -412,13 +412,16 @@ def main():
     for i, p in enumerate(pure_posts):
         print(f"[{i+1}] {p['post_id']} | {p['keyword']} | Group: {p['group_id']} | Store: {p['affiliate_url'][:35]}...")
 
-    with open("data/reports/viral_posts.json", "w", encoding="utf-8") as f:
+    for p in pure_posts:
+        p["data_source"] = "catalog"
+
+    with open("data/reports/catalog_posts.json", "w", encoding="utf-8") as f:
         json.dump(pure_posts, f, ensure_ascii=False, indent=2)
 
-    with open("public/viral_posts.json", "w", encoding="utf-8") as f:
+    with open("public/catalog_posts.json", "w", encoding="utf-8") as f:
         json.dump(pure_posts, f, ensure_ascii=False, indent=2)
 
-    print("\nSaved pure posts to data/reports/viral_posts.json & public/viral_posts.json!")
+    print("\nSaved pure posts to data/reports/catalog_posts.json & public/catalog_posts.json!")
 
 if __name__ == "__main__":
     main()

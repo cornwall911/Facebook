@@ -444,10 +444,10 @@ def main():
     os.makedirs("data/reports", exist_ok=True)
     os.makedirs("public", exist_ok=True)
 
-    with open("data/reports/viral_posts.json", "w", encoding="utf-8") as f:
+    with open("data/reports/catalog_posts.json", "w", encoding="utf-8") as f:
         json.dump(unique_final, f, ensure_ascii=False, indent=2)
 
-    with open("public/viral_posts.json", "w", encoding="utf-8") as f:
+    with open("public/catalog_posts.json", "w", encoding="utf-8") as f:
         json.dump(unique_final, f, ensure_ascii=False, indent=2)
 
     print("Successfully saved viral_posts.json to data/reports/ and public/!")

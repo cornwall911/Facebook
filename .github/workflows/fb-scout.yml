@@ -3,22 +3,14 @@ name: Facebook Viral Posts Scout
 on:
   workflow_dispatch:
     inputs:
-      keywords:
-        description: 'Keywords to search (comma-separated or empty to use keywords.txt)'
-        required: false
-        default: ''
       groups:
         description: 'Group IDs or URLs to search (comma-separated or empty to use groups.txt)'
         required: false
         default: ''
-      min_reactions:
-        description: 'Minimum reactions threshold'
-        required: false
-        default: '2'
 
   schedule:
-    # Runs automatically every 12 hours (00:00 UTC and 12:00 UTC)
-    - cron: '0 */12 * * *'
+    # Runs daily at 02:00 UTC (finishes before 05:00 UTC)
+    - cron: '0 2 * * *'
 
 permissions:
   contents: write
@@ -50,18 +42,14 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           CLOUDFLARE_PAGES_URL: ${{ secrets.CLOUDFLARE_PAGES_URL }}
-          MIN_REACTIONS: ${{ github.event.inputs.min_reactions || '2' }}
           PROXY_URL: ${{ secrets.PROXY_URL }}
           HEADLESS: 'true'
         run: |
-          ARGS="run --headless"
           if [ -n "${{ github.event.inputs.groups }}" ]; then
-            ARGS="$ARGS --groups '${{ github.event.inputs.groups }}'"
+            python -m fb_winner_scout run --headless --groups "${{ github.event.inputs.groups }}"
+          else
+            python -m fb_winner_scout run --headless --groups groups.txt
           fi
-          if [ -n "${{ github.event.inputs.keywords }}" ]; then
-            ARGS="$ARGS --keywords '${{ github.event.inputs.keywords }}'"
-          fi
-          python -m fb_winner_scout $ARGS
 
       - name: Prepare Dashboard & Auto-Push for Cloudflare
         if: always()
@@ -73,7 +61,7 @@ jobs:
           fi
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add public/index.html index.html data/reports/
+          git add public/index.html index.html public/source_posts.json public/run_status.json data/reports/
           git commit -m "chore(auto): update viral posts and dashboard" || echo "No changes to commit"
           git pull --rebase origin main || true
           git push origin main || echo "Git push skipped"
@@ -84,6 +72,7 @@ jobs:
         with:
           name: viral-posts-results-${{ github.run_id }}
           path: |
+            public/
             data/reports/
             data/images/
           retention-days: 14

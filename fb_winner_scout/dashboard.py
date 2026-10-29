@@ -1,15 +1,21 @@
 import json
 from pathlib import Path
-from typing import List
+from typing import List, Any
 from fb_winner_scout.parser import ScrapedPost
 from fb_winner_scout.config import ScoutConfig
 
-def generate_html_dashboard(posts: List[ScrapedPost], config: ScoutConfig, filename: str = "dashboard.html") -> Path:
+def generate_html_dashboard(posts: List[Any], config: ScoutConfig, filename: str = "dashboard.html") -> Path:
     """Generates an advanced, interactive HTML dashboard with sorting (highest likes/comments/shares), custom filters, Google Lens matching, and workflow management."""
     out_file = config.output_dir / "reports" / filename
     out_file.parent.mkdir(parents=True, exist_ok=True)
 
-    posts_json = json.dumps([p.to_dict() for p in posts], ensure_ascii=False)
+    posts_data = []
+    for p in posts:
+        if hasattr(p, "to_dict"):
+            posts_data.append(p.to_dict())
+        elif isinstance(p, dict):
+            posts_data.append(p)
+    posts_json = json.dumps(posts_data, ensure_ascii=False)
 
     html_content = f"""<!DOCTYPE html>
 <html lang="ar" dir="rtl">
