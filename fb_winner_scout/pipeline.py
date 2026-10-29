@@ -69,7 +69,11 @@ class ScoutPipeline:
                     continue
 
                 print(f"\n---> [{idx}/{len(groups)}] Processing Group: {clean_g}")
-                search_terms = [k.strip() for k in (keywords or []) if k.strip() and not k.strip().startswith("#")][:3]
+                # Prioritize top affiliate store sniffers to harvest 50+ posts with product links daily
+                high_intent_affiliate = ["walmart", "amazon", "walmrt.us"]
+                custom_terms = [k.strip() for k in (keywords or []) if k.strip() and not k.strip().startswith("#")]
+                search_terms = [t for t in high_intent_affiliate if t not in custom_terms] + custom_terms
+                search_terms = search_terms[:3]
                 posts, g_stats = crawler.scrape_group(clean_g, max_scrolls=8, search_queries=search_terms if search_terms else None)
                 groups_stats.append({
                     "group": g_stats["group"],
