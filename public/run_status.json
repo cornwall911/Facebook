@@ -1,31 +1,80 @@
 {
-  "started_at": "2026-10-29T20:48:24Z",
-  "finished_at": "2026-10-29T20:49:39Z",
+  "started_at": "2026-10-29T20:52:16Z",
+  "finished_at": "2026-10-29T20:55:27Z",
   "session": "logged-in",
   "groups": [
     {
       "group": "466434735988069",
       "ok": true,
-      "posts_seen": 192,
-      "posts_with_link": 22,
+      "posts_seen": 112,
+      "posts_with_link": 8,
       "error": null
     },
     {
       "group": "1016323863626521",
       "ok": true,
-      "posts_seen": 266,
-      "posts_with_link": 25,
+      "posts_seen": 125,
+      "posts_with_link": 9,
       "error": null
     },
     {
       "group": "825548446334240",
       "ok": true,
-      "posts_seen": 84,
+      "posts_seen": 99,
       "posts_with_link": 5,
+      "error": null
+    },
+    {
+      "group": "RVhackcamp",
+      "ok": true,
+      "posts_seen": 44,
+      "posts_with_link": 0,
+      "error": null
+    },
+    {
+      "group": "1842777076228693",
+      "ok": true,
+      "posts_seen": 55,
+      "posts_with_link": 0,
+      "error": null
+    },
+    {
+      "group": "roadtreking",
+      "ok": true,
+      "posts_seen": 43,
+      "posts_with_link": 0,
+      "error": null
+    },
+    {
+      "group": "144983496980739",
+      "ok": true,
+      "posts_seen": 31,
+      "posts_with_link": 0,
+      "error": null
+    },
+    {
+      "group": "881186386331336",
+      "ok": true,
+      "posts_seen": 92,
+      "posts_with_link": 5,
+      "error": null
+    },
+    {
+      "group": "1940303396781466",
+      "ok": true,
+      "posts_seen": 44,
+      "posts_with_link": 0,
+      "error": null
+    },
+    {
+      "group": "821688796114597",
+      "ok": true,
+      "posts_seen": 52,
+      "posts_with_link": 1,
       "error": null
     }
   ],
-  "total_written": 52,
+  "total_written": 28,
   "data_source": "live",
   "errors": []
 }
