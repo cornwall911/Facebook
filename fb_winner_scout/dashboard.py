@@ -351,7 +351,8 @@ def generate_html_dashboard(posts: List[Any], config: ScoutConfig, filename: str
             rawPosts.forEach(p => {{
                 const st = getPostStatus(p.post_id);
                 if (counts[st] !== undefined) counts[st]++;
-                if (p.affiliate_url && p.affiliate_url.length > 5) affCount++;
+                const aff = p.product_url || p.affiliate_url;
+                if (aff && aff.length > 5) affCount++;
             }});
             document.getElementById('total-count').innerText = counts.all;
             document.getElementById('total-num').innerText = counts.all;
@@ -427,7 +428,8 @@ def generate_html_dashboard(posts: List[Any], config: ScoutConfig, filename: str
                 const st = getPostStatus(p.post_id);
                 const matchesStatus = (currentStatusFilter === 'all') || (st === currentStatusFilter);
                 const matchesClicks = !clicksOnlyFilter || (p.clicks_count && p.clicks_count >= 100);
-                const matchesAffiliate = (!affiliateOnlyFilter && !hasAffiliateOnly) || (p.affiliate_url && p.affiliate_url.length > 5);
+                const affLink = p.product_url || p.affiliate_url;
+                const matchesAffiliate = (!affiliateOnlyFilter && !hasAffiliateOnly) || (affLink && affLink.length > 5);
                 const matchesQuery = !q || 
                     (p.keyword && p.keyword.toLowerCase().includes(q)) || 
                     (p.caption && p.caption.toLowerCase().includes(q)) ||
@@ -438,10 +440,11 @@ def generate_html_dashboard(posts: List[Any], config: ScoutConfig, filename: str
                     (platformFilter === 'pinterest' && isPin) ||
                     (platformFilter === 'facebook' && !isPin);
 
-                const matchesMinRx = (p.reactions_count || 0) >= minRx;
+                const rxVal = (p.reactions !== undefined && p.reactions !== null) ? p.reactions : (p.reactions_count || 0);
+                const matchesMinRx = rxVal >= minRx;
                 const matchesKw = (kwFilter === 'all') || (p.keyword === kwFilter);
                 
-                const imgs = p.image_urls ? p.image_urls.split('; ').filter(Boolean) : [];
+                const imgs = p.image_urls ? p.image_urls.split('; ').filter(Boolean) : (p.image_url ? [p.image_url] : []);
                 const matchesImg = !hasImgOnly || imgs.length > 0;
                 const matchesPhysical = !physicalOnly || (p.is_product && imgs.length > 0);
 
@@ -452,11 +455,11 @@ def generate_html_dashboard(posts: List[Any], config: ScoutConfig, filename: str
             if (sortVal === 'clicks_desc') {{
                 filtered.sort((a, b) => (b.clicks_count || 0) - (a.clicks_count || 0));
             }} else if (sortVal === 'reactions_desc') {{
-                filtered.sort((a, b) => (b.reactions_count || 0) - (a.reactions_count || 0));
+                filtered.sort((a, b) => ((b.reactions ?? b.reactions_count) || 0) - ((a.reactions ?? a.reactions_count) || 0));
             }} else if (sortVal === 'comments_desc') {{
-                filtered.sort((a, b) => (b.comments_count || 0) - (a.comments_count || 0));
+                filtered.sort((a, b) => ((b.comments ?? b.comments_count) || 0) - ((a.comments ?? a.comments_count) || 0));
             }} else if (sortVal === 'shares_desc') {{
-                filtered.sort((a, b) => (b.shares_count || 0) - (a.shares_count || 0));
+                filtered.sort((a, b) => ((b.shares ?? b.shares_count) || 0) - ((a.shares ?? a.shares_count) || 0));
             }} else if (sortVal === 'reactions_asc') {{
                 filtered.sort((a, b) => (a.reactions_count || 0) - (b.reactions_count || 0));
             }}
@@ -483,7 +486,7 @@ def generate_html_dashboard(posts: List[Any], config: ScoutConfig, filename: str
                 const card = document.createElement('div');
                 card.className = 'card';
                 
-                const imgs = p.image_urls ? p.image_urls.split('; ').filter(Boolean) : [];
+                const imgs = p.image_urls ? p.image_urls.split('; ').filter(Boolean) : (p.image_url ? [p.image_url] : []);
                 const firstImg = imgs.length > 0 ? imgs[0] : null;
                 const status = getPostStatus(p.post_id);
 
@@ -502,17 +505,17 @@ def generate_html_dashboard(posts: List[Any], config: ScoutConfig, filename: str
                     <div class="card-header">
                         <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
                             ${{(p.clicks_count && p.clicks_count >= 100) ? `<span class="badge" style="background:#7f1d1d;color:#fecaca;border:1px solid #ef4444;font-weight:800;">🏆 فائز مثبت (+100 Clicks)</span>` : ''}}
-                            ${{p.affiliate_url ? `<span class="badge" style="background:#065f46;color:#a7f3d0;border:1px solid #10b981;font-weight:800;">🔗 رابط أفلييت جاهز</span>` : ''}}
+                            ${{(p.product_url || p.affiliate_url) ? `<span class="badge" style="background:#065f46;color:#a7f3d0;border:1px solid #10b981;font-weight:800;">🔗 رابط أفلييت جاهز</span>` : ''}}
                             ${{(p.group_id && p.group_id.includes('Pinterest')) ? `<span class="badge" style="background:#be185d;color:#fdf2f8;border:1px solid #f43f5e;">📌 بينتيريست</span>` : `<span class="badge">${{escapeHtml(p.keyword || 'Viral Post')}}</span>`}}
                             ${{p.is_product ? `<span class="prod-badge">📦 ${{escapeHtml(p.product_category || 'منتج فيزيائي')}}</span>` : ''}}
                             ${{p.winner_score ? `<span class="score-badge">⭐ ${{p.winner_score}}/100</span>` : ''}}
                             ${{(p.caption && /comment|below|first\\s*comm/i.test(p.caption)) ? `<span class="badge" style="background:#312e81;color:#c7d2fe;border:1px solid #6366f1;">💬 اللينك في التعليقات</span>` : ''}}
                         </div>
                         <div class="metrics">
-                            ${{p.clicks_count ? `<span class="ck" title="عدد النقرات الفعلية المثبتة">🔥 ${{p.clicks_count.toLocaleString()}} Clicks</span>` : ''}}
-                            <span class="rx" title="عدد اللايكات والتفاعلات">👍 ${{p.reactions_count.toLocaleString()}}</span>
-                            <span class="cm" title="عدد التعليقات">💬 ${{p.comments_count.toLocaleString()}}</span>
-                            <span class="sh" title="عدد المشاركات">🔁 ${{p.shares_count.toLocaleString()}}</span>
+                            ${{(p.clicks_count !== undefined && p.clicks_count !== null) ? `<span class="ck" title="عدد النقرات الفعلية المثبتة">🔥 ${{p.clicks_count.toLocaleString()}} Clicks</span>` : ''}}
+                            <span class="rx" title="عدد اللايكات والتفاعلات">👍 ${{p.reactions !== undefined && p.reactions !== null ? p.reactions.toLocaleString() : (p.reactions_count !== undefined && p.reactions_count !== null ? p.reactions_count.toLocaleString() : '-')}}</span>
+                            <span class="cm" title="عدد التعليقات">💬 ${{p.comments !== undefined && p.comments !== null ? p.comments.toLocaleString() : (p.comments_count !== undefined && p.comments_count !== null ? p.comments_count.toLocaleString() : '-')}}</span>
+                            <span class="sh" title="عدد المشاركات">🔁 ${{p.shares !== undefined && p.shares !== null ? p.shares.toLocaleString() : (p.shares_count !== undefined && p.shares_count !== null ? p.shares_count.toLocaleString() : '-')}}</span>
                         </div>
                     </div>
 
@@ -538,7 +541,7 @@ def generate_html_dashboard(posts: List[Any], config: ScoutConfig, filename: str
                     ${{thumbsHtml}}
 
                     <div class="card-body">
-                        <div class="author-info">الناشر: <strong>${{escapeHtml(p.author || 'عضو')}}</strong> | في جروب: ${{escapeHtml(p.group_id === 'RVhackcamp' ? 'RV Camping & Ideas' : (p.group_id || 'عام'))}}</div>
+                        <div class="author-info">الناشر: <strong>${{escapeHtml(p.author || 'عضو')}}</strong> | في جروب: ${{escapeHtml(p.group_name || p.group || p.group_id || 'عام')}}</div>
                         <div class="caption-box">${{escapeHtml(p.caption || 'No text')}}</div>
                         
                         ${{p.generated_caption ? `
@@ -584,7 +587,9 @@ def generate_html_dashboard(posts: List[Any], config: ScoutConfig, filename: str
                         }}
                         ${{firstImg ? `<a href="${{firstImg}}" download="product_${{p.post_id}}.jpg" target="_blank" class="btn" style="background:#334155;color:#e2e8f0;" title="تحميل أو فتح صورة المنتج عالية الدقة">📥 تحميل الصورة</a>` : ''}}
                         ${{lensUrl ? `<a id="lens-btn-${{p.post_id}}" href="${{lensUrl}}" target="_blank" class="btn btn-lens" title="البحث الفوري عن المنتج في Google Lens لمعرفة اسمه وسعره بدقة">🔍 بحث بالصورة (Lens)</a>` : `<button class="btn btn-lens" disabled style="opacity:0.4;">🔍 لا توجد صورة</button>`}}
-                        ${{p.affiliate_url ? `<a href="${{p.affiliate_url}}" target="_blank" class="btn btn-affiliate" style="${{(p.affiliate_url.includes('amazon') || p.affiliate_url.includes('amzn')) ? 'background:#ea580c;' : (p.affiliate_url.includes('fashlyst') ? 'background:#7c3aed;' : 'background:#0284c7;')}}color:white;font-weight:800;" title="فتح رابط المتجر الأصلي">🛒 رابط المنتج (${{p.affiliate_url.includes('walmrt') || p.affiliate_url.includes('walmart') ? 'Walmart' : (p.affiliate_url.includes('fashlyst') ? 'Fashlyst' : (p.affiliate_url.includes('amazon') || p.affiliate_url.includes('amzn') ? 'Amazon' : 'شراء'))}})</a>` : ''}}
+                        ${{(p.product_url || p.affiliate_url) ? `
+                            <a href="${{p.product_url || p.affiliate_url}}" target="_blank" class="btn btn-affiliate" style="${{((p.product_url || p.affiliate_url).includes('amazon') || (p.product_url || p.affiliate_url).includes('amzn')) ? 'background:#ea580c;' : ((p.product_url || p.affiliate_url).includes('fashlyst') ? 'background:#7c3aed;' : 'background:#0284c7;')}}color:white;font-weight:800;" title="فتح رابط المتجر الأصلي">🛒 رابط المنتج (${{(p.product_url || p.affiliate_url).includes('walmrt') || (p.product_url || p.affiliate_url).includes('walmart') ? 'Walmart' : ((p.product_url || p.affiliate_url).includes('fashlyst') ? 'Fashlyst' : ((p.product_url || p.affiliate_url).includes('amazon') || (p.product_url || p.affiliate_url).includes('amzn') ? 'Amazon' : 'شراء'))}})</a>
+                        ` : ''}}
                         <a href="https://www.amazon.com/s?k=${{encodeURIComponent(p.amazon_query || p.keyword || 'rv gadget')}}" target="_blank" class="btn btn-amazon">🛒 بحث في أمازون</a>
                         <button class="btn btn-sheet" onclick="copySheetRow('${{p.post_id}}')">📑 نسخ لشيت أحمد</button>
                         <button class="btn btn-angles-toggle" onclick="toggleAngles('${{p.post_id}}')">✨ زوايا (1-to-5)</button>
@@ -641,7 +646,7 @@ def generate_html_dashboard(posts: List[Any], config: ScoutConfig, filename: str
         function copySheetRow(postId) {{
             const p = rawPosts.find(item => item.post_id === postId);
             if (!p) return;
-            const imgs = p.image_urls ? p.image_urls.split('; ').filter(Boolean) : [];
+            const imgs = p.image_urls ? p.image_urls.split('; ').filter(Boolean) : (p.image_url ? [p.image_url] : []);
             const firstImg = imgs.length > 0 ? imgs[0] : '';
             const cleanCap = (p.caption || '').replace(/[\\r\\n\\t]+/g, ' ').substring(0, 150);
             
