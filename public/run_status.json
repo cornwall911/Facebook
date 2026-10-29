@@ -1,31 +1,31 @@
 {
-  "started_at": "2026-10-29T16:15:16Z",
-  "finished_at": "2026-10-29T16:16:01Z",
+  "started_at": "2026-10-29T20:48:24Z",
+  "finished_at": "2026-10-29T20:49:39Z",
   "session": "logged-in",
   "groups": [
     {
+      "group": "466434735988069",
+      "ok": true,
+      "posts_seen": 192,
+      "posts_with_link": 22,
+      "error": null
+    },
+    {
       "group": "1016323863626521",
       "ok": true,
-      "posts_seen": 27,
-      "posts_with_link": 2,
+      "posts_seen": 266,
+      "posts_with_link": 25,
       "error": null
     },
     {
-      "group": "RVhackcamp",
+      "group": "825548446334240",
       "ok": true,
-      "posts_seen": 27,
-      "posts_with_link": 0,
-      "error": null
-    },
-    {
-      "group": "713758696185516",
-      "ok": true,
-      "posts_seen": 0,
-      "posts_with_link": 0,
+      "posts_seen": 84,
+      "posts_with_link": 5,
       "error": null
     }
   ],
-  "total_written": 2,
+  "total_written": 52,
   "data_source": "live",
   "errors": []
 }
