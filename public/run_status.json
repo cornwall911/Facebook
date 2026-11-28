@@ -1,6 +1,6 @@
 {
-  "started_at": "2026-11-27T23:54:25Z",
-  "finished_at": "2026-11-27T23:56:12Z",
+  "started_at": "2026-11-28T06:16:32Z",
+  "finished_at": "2026-11-28T06:18:34Z",
   "session": "logged-in",
   "groups": [
     {
@@ -61,10 +61,10 @@
     },
     {
       "group": "1940303396781466",
-      "ok": false,
+      "ok": true,
       "posts_seen": 0,
       "posts_with_link": 0,
-      "error": "Redirected to login on group navigation"
+      "error": null
     },
     {
       "group": "821688796114597",
@@ -85,7 +85,6 @@
     "Group https://www.facebook.com/groups/roadtreking/: Redirected to login on group navigation",
     "Group https://www.facebook.com/groups/144983496980739: Redirected to login on group navigation",
     "Group https://www.facebook.com/groups/881186386331336/: Redirected to login on group navigation",
-    "Group https://www.facebook.com/groups/1940303396781466/: Redirected to login on group navigation",
     "Group https://www.facebook.com/groups/821688796114597/: Redirected to login on group navigation"
   ]
 }
